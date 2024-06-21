@@ -1,0 +1,32 @@
+---
+title: "Meta-eukomic"
+format: html
+editor: visual
+---
+
+# Meta-eukomic 
+
+_SKH_ last updated June 2024
+
+Location for raw files: ```/scratch/group/hu-lab/meta-eukomics/raw-data```
+
+## Background reading
+
+1. Cohen NR, Alexander H, Krinos AI, Hu SK, Lampe RH. Marine Microeukaryote Metatranscriptomics: Sample Processing and Bioinformatic Workflow Recommendations for Ecological Applications. Frontiers in Marine Science 2022; 9.
+
+2. Krinos AI, Cohen NR, Follows MJ, Alexander H. Reverse engineering environmental metatranscriptomes clarifies best practices for eukaryotic assembly. BMC Bioinformatics 2023; 24: 74.
+
+
+## Working environment 
+
+High performace computer (HPC) hosted by my University. This is the TAMU HPRC
+
+# Step-by-step
+
+## 1. Determine assembly groups
+
+
+
+## 2. Trim & QC
+
+# eukrhythmic
