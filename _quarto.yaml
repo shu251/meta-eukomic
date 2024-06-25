@@ -1,0 +1,24 @@
+project:
+  type: website
+  output-dir: docs
+  render:
+    - main.qmd
+
+website:
+  title: "Meta-eukomic"
+  navbar:
+    left:
+      - href: main.qmd
+        text: Main
+
+format:
+  html:
+    theme: sandstone
+    css: styles.css
+    code-fold: true
+    toc: true
+    toc-location: left
+    number-sections: true
+    number-depth: 2
+
+
