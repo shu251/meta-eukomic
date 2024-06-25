@@ -25,8 +25,37 @@ High performace computer (HPC) hosted by my University. This is the TAMU HPRC
 
 ## 1. Determine assembly groups
 
-
-
 ## 2. Trim & QC
+
+
+
+Code for slurm script run on the HPC to run fastqc. For this set of samples, it took 10 minutes and used 290 MB. CPU used: 00:12:27.
+```
+module load FastQC/0.11.9-Java-11
+
+fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz
+fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz
+```
+
+Then we need to trim the individual reads, removing any sequencing-based primers, etc.
+We can use the program, [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) for this.
+
+
+R1 reads are forward and R2 are reverse. 
+
+```
+module load Trimmomatic/0.39-Java-11
+
+java -jar trimmomatic-0.39.jar PE -phred33 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/trimmed-reads/HS039_S90_L004_R1_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/trimmed-reads/HS039_S90_L004_R1_unpaired.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/trimmed-reads/HS039_S90_L004_R2_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/trimmed-reads/HS039_S90_L004_R2_unpaired.fastq.gz ILLUMINACLIP:/home/skhu/meta-eukomic/adapters-primers.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+
+echo "Trimmomtatic complete. Repeating fastqc"
+
+module load FastQC/0.11.9-Java-11
+
+fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/trimmed-reads/HS039_S90_L004_R1_trimmed.fastq.gz
+fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/trimmed-reads/HS039_S90_L004_R2_trimmed.fastq.gz
+
+
+```
 
 # eukrhythmic
