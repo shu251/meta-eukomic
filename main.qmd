@@ -138,11 +138,13 @@ In your slurm script, activate conda, and then the sortmerna environment:
 module load Anaconda3/2022.05
 conda activate sortmerna_env
 
+mkdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort
+
 sortmerna -ref /scratch/group/hu-lab/meta-eukomics/rRNA_databases_v4/smr_v4.3_sensitive_db.fasta \
 -reads /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz \
 -reads /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
--workdir /scratch/group/hu-lab/meta-eukomics/
--paired_in -fastx 
+-workdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort/
+-fastx --paired_in --out2 --threads $SLURM_CPUS_PER_TASK
 ```
 
 `paired_in`: The option ‘paired_in’ is optimal for users who want all reads in the other.fasta file to be non-rRNA. However, there are small chances that reads which are non-rRNA will also be put into the aligned.fasta file.
@@ -227,12 +229,10 @@ module load GCC/9.3.0
 module load OpenMPI/4.0.3
 module load QUAST/5.0.2-Python-3.8.2
 
-./quast.py test_data/contigs_1.fasta \
-           test_data/contigs_2.fasta \
-        -r test_data/reference.fasta.gz \
-        -g test_data/genes.txt \
-        -1 test_data/reads1.fastq.gz -2 test_data/reads2.fastq.gz \
-        -o quast_test_output
+quast.py /scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa \
+        -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
+        -o /scratch/group/hu-lab/meta-eukomics/assembly/idba-out/ \
+        --threads $SLURM_CPUS_PER_TASK
 ```
 
 ###
