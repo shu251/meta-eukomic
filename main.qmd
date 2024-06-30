@@ -263,8 +263,53 @@ Download files locally from:
   * Basic read stats: `meta-eukomics/assembly/*-out/reads_stats/reads_report.tsv`
 
 
-###
+## 6. Cluster assembly output (mmseqs2)
 
+Because we have outputs from two separate assemblies, we can use a program to "cluster" the output contigs together. The clustering / merging of contigs is based on sequence similarity, so we need to include a similarity parameter that is kind of arbitrary.
+
+
+We will use [mmseqs2](https://github.com/soedinglab/MMseqs2) and try this at 99% similarity. MMseq stands for "Many-against-Many sequence searching"
+
+
+First, the output contig files from IDBA and Megahit are combined.
+
+
+```{r}  
+# Precursor load to use MMseqs2 on HPRC
+module load GCC/10.2.0
+module load OpenMPI/4.0.5
+module load MMseqs2/13-45111
+
+mkdir /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly
+
+cat /scratch/group/hu-lab/meta-eukomics/assembly/megahit-output/final.contigs.fa /scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa > /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta
+
+
+# Use the 'easy-linclust' option
+
+mmseqs easy-linclust /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/clusterRes /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/tmp --threads=$SLURM_CPUS_PER_TASK
+
+```
+
+
+## 7. Transdecoder
+
+```{r}
+module load GCC/11.3.0
+module load TransDecoder/5.5.0
+
+#extract the long open reading frames
+# TransDecoder.LongOrfs -t target_transcripts.fasta
+
+# predict the likely coding regions
+# TransDecoder.Predict -t target_transcripts.fasta [ homology options ]
+```
+
+
+
+### 7.1 QUAST new combined assembly
+
+## 8. Marferret 
 
 
 
@@ -278,8 +323,8 @@ Download files locally from:
 | megahit     | 1.2.9   |
 | IDBA-Tran   | 1.1.3   |
 | quast       | 5.0.2   |
-|             |         |
-|             |         |
+| mmseqs2     |         |
+| TransDecoder|5.5.0    |
 |             |         |
 |             |         |
 |             |         |
@@ -298,3 +343,37 @@ Download files locally from:
 
 
 # eukrhythmic
+
+Guidelines and notes on running the same set of samples through the [eukrhythmic pipeline](https://eukrhythmic.readthedocs.io/en/latest/index.html). Running this on the TAMU HPRC with a conda environment.
+
+First create a conda environment specific for eukrhythmic. [Learn more about how to manage these environments here.](https://docs.conda.io/projects/conda/en/4.6.1/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands)
+
+```
+conda create -n eukrhythmic
+
+# Activate environment
+conda activate eukrhythmic
+
+# Use HPRC system to ensure newest version of available Python is loaded
+> (eukrhythmic) module load GCCcore/12.3.0
+> (eukrhythmic) module load Python/3.11.3
+```
+To check what version of python you are automatically running, use `python --version`.
+
+* I could not get mamba configured correctly?
+```
+> (eukrhythmic) conda install conda-forge::pyyaml
+> (eukrhythmic) conda install -c conda-forge python pandas
+
+# Install snakemake, but use mamba
+> (eukrhythmic) conda install -c conda-forge mamba
+
+mamba install -c conda-forge -c bioconda snakemake
+```
+
+To run eukrhythmic, activate the environment: `conda activate eukrhythmic`.
+
+
+```{r}
+```
+
