@@ -2,9 +2,6 @@
 title: "Meta-eukomic"
 format:
   html:
-    code-fold: show
-    code-tools: true
-    code-copy: true
     toc: true
     toc-location: left
     number-sections: true
@@ -38,16 +35,17 @@ High performace computer (HPC) hosted by my University. This is the TAMU HPRC
 
 Code for slurm script run on the HPC to run fastqc (`fastqc.slurm`). For this set of samples, it took 10 minutes and used 290 MB. CPU used: 00:12:27.
 
-```         
+```{r}       
 module load FastQC/0.11.9-Java-11
 
 fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz
 fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz
 ```
 
+
 In order to look at the output `.html` files, they need to be opened locally.
 
-```         
+```{r}  
 scp $HPRC-ADDRESS:/scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001_fastqc.html meta-eukomic/output-files/
 ```
 
@@ -65,7 +63,7 @@ Slurm script, `trim_fastqc.slurm`. Below, trim parameter include:
 
 * Drop reads shorter than 50 bases long (MINLEN:50)
 
-```         
+```{r}           
 module load Trimmomatic/0.39-Java-11
 
 java -jar $EBROOTTRIMMOMATIC/trimmomatic-0.39.jar PE /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz  /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_unpaired.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_unpaired.fastq.gz ILLUMINACLIP:adapters-primers.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:10 MINLEN:50
@@ -86,7 +84,7 @@ fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fa
 
 On the TAMU HPRC, this is where we needed to make a conda environment to run this.
 
-```
+```{r}  
 # Load anaconda
 module load Anaconda3/2022.05
 
@@ -98,11 +96,11 @@ conda config --set channel_priority strict
 ```
 
 Search for sortmerna using conda:
-```
+```{r}  
 conda search sortmerna
 ```
 Create a conda environment specific for sortmerna, activate it, and install it.
-```
+```{r}  
 conda create --name sortmerna_env
 conda activate sortmerna_env
 conda install sortmerna
@@ -117,7 +115,7 @@ Separately, you need to download the databases to "align" and check the sequence
 
 
 Instructions for [downloading version 4](https://sortmerna.readthedocs.io/en/latest/databases.html):
-```
+```{r}  
 # Move to the location you want your rRNA databases stored
 cd /scratch/group/hu-lab/meta-eukomics/ 
 
@@ -133,7 +131,7 @@ tar -xvf database.tar.gz -C rRNA_databases_v4
 
 
 In your slurm script, activate conda, and then the sortmerna environment:
-```
+```{r}  
 # Load anaconda
 module load Anaconda3/2022.05
 conda activate sortmerna_env
@@ -169,7 +167,7 @@ Megahit uses multiple k-mer strategy, and we can set the min and max k. In order
 
 
 See slurm script: `megahit-assembly.slurm`
-```         
+```{r}           
 module load GCCcore/11.2.0
 module load MEGAHIT/1.2.9
 
@@ -194,7 +192,7 @@ When megahit assembly is complete, use this option to visualize it: https://gith
 [IDBA-tran](https://i.cs.hku.hk/~alse/hkubrg/projects/idba_tran/index.html) is another _de novo_ assembler. Uses local assembly to reconstruct missing kmers in low-expressed transcripts.
 
 See script: `idba-assembly.slurm` to run assembly with minimum kmer at 20 and max kmer at 50 with a 5 step increment of kmer.
-```
+```{r}  
 echo "unzip files"
 gunzip /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R*_trimmed.fastq.gz
 
@@ -224,7 +222,10 @@ Output: `/scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa`
 
 QUAST stands for _QUality ASsessment Tool_ and it is a tool for evaluating assemblies. Not all tools for evaluating assemblies will work, as most are built for metagenomics or require a reference genome. In this case, we do not have a reference genome. 
 
-```
+
+*First for the IDBA output*:
+
+```{r}  
 module load GCC/9.3.0
 module load OpenMPI/4.0.3
 module load QUAST/5.0.2-Python-3.8.2
@@ -234,6 +235,33 @@ quast.py /scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa \
         -o /scratch/group/hu-lab/meta-eukomics/assembly/idba-out/ \
         --threads $SLURM_CPUS_PER_TASK
 ```
+
+This was run on 1 node with 16 cores. It used 3.5 GB of memory in about 1 hour. 6:15 CPUs used.
+
+
+
+*Repeat for the megahit output*
+
+```{r}  
+module load GCC/9.3.0
+module load OpenMPI/4.0.3
+module load QUAST/5.0.2-Python-3.8.2
+
+quast.py /scratch/group/hu-lab/meta-eukomics/assembly/megahit-output/final.contigs.fa \
+        -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
+        -o /scratch/group/hu-lab/meta-eukomics/assembly/megahit-output/ \
+        --threads $SLURM_CPUS_PER_TASK
+```
+
+
+#### Interpret QUAST 
+
+Download files locally from:
+
+  * PDF files: `meta-eukomics/assembly/*-out/basic_stats/*.pdf `
+  * Use an ICARUS html viewer: `meta-eukomics/assembly/*-out/icarus* `
+  * Basic read stats: `meta-eukomics/assembly/*-out/reads_stats/reads_report.tsv`
+
 
 ###
 
@@ -249,7 +277,7 @@ quast.py /scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa \
 | SortMeRNA   | 4.3.7   |
 | megahit     | 1.2.9   |
 | IDBA-Tran   | 1.1.3   |
-|             |         |
+| quast       | 5.0.2   |
 |             |         |
 |             |         |
 |             |         |

@@ -10,12 +10,20 @@ website:
     left:
       - href: main.qmd
         text: Main
+        
+execute:
+  eval: false
 
 format:
   html:
-    theme: sandstone
-    css: styles.css
-    code-fold: true
+    theme: lux
+    code-fold: show
+    code-tools: true
+    code-line-numbers: true
+    code-block-background: true
+    code-overflow: scroll
+    code-block-border-left: "#ae017e"
+    code-copy: true
     toc: true
     toc-location: left
     number-sections: true

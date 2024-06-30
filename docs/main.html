@@ -95,7 +95,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 }</script>
 
 
-<link rel="stylesheet" href="styles.css">
 </head>
 
 <body class="floating nav-fixed">
@@ -143,13 +142,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#determine-assembly-groups" id="toc-determine-assembly-groups" class="nav-link" data-scroll-target="#determine-assembly-groups"><span class="header-section-number">2.1</span> 1. Determine assembly groups</a></li>
   <li><a href="#trim-qc" id="toc-trim-qc" class="nav-link" data-scroll-target="#trim-qc"><span class="header-section-number">2.2</span> 2. Trim &amp; QC</a></li>
-  <li><a href="#assembly" id="toc-assembly" class="nav-link" data-scroll-target="#assembly"><span class="header-section-number">2.3</span> 3. Assembly</a>
+  <li><a href="#remove-ribosomal-rna" id="toc-remove-ribosomal-rna" class="nav-link" data-scroll-target="#remove-ribosomal-rna"><span class="header-section-number">2.3</span> 3. Remove ribosomal RNA</a>
+  <ul class="collapse">
+  <li><a href="#run-sortmerna" id="toc-run-sortmerna" class="nav-link" data-scroll-target="#run-sortmerna">Run SortMeRNA</a></li>
+  </ul></li>
+  <li><a href="#assembly" id="toc-assembly" class="nav-link" data-scroll-target="#assembly"><span class="header-section-number">2.4</span> 4. Assembly</a>
   <ul class="collapse">
   <li><a href="#megahit-assembly-1" id="toc-megahit-assembly-1" class="nav-link" data-scroll-target="#megahit-assembly-1">MEGAHIT (assembly 1)</a></li>
   <li><a href="#idba-tran" id="toc-idba-tran" class="nav-link" data-scroll-target="#idba-tran">IDBA-Tran</a></li>
   </ul></li>
-  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section"><span class="header-section-number">2.4</span> 4.</a></li>
-  <li><a href="#metatranscriptome-run-information" id="toc-metatranscriptome-run-information" class="nav-link" data-scroll-target="#metatranscriptome-run-information"><span class="header-section-number">2.5</span> Metatranscriptome run information</a></li>
+  <li><a href="#evaluate-assemblies" id="toc-evaluate-assemblies" class="nav-link" data-scroll-target="#evaluate-assemblies"><span class="header-section-number">2.5</span> 5. Evaluate assemblies</a>
+  <ul class="collapse">
+  <li><a href="#quast" id="toc-quast" class="nav-link" data-scroll-target="#quast">QUAST</a></li>
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section"></a></li>
+  </ul></li>
+  <li><a href="#metatranscriptome-run-information" id="toc-metatranscriptome-run-information" class="nav-link" data-scroll-target="#metatranscriptome-run-information"><span class="header-section-number">2.6</span> Metatranscriptome run information</a></li>
   </ul></li>
   <li><a href="#eukrhythmic" id="toc-eukrhythmic" class="nav-link" data-scroll-target="#eukrhythmic"><span class="header-section-number">3</span> eukrhythmic</a></li>
   </ul>
@@ -164,7 +171,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<div class="quarto-title-block"><div><h1 class="title">Meta-eukomic</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+<div class="quarto-title-block"><div><h1 class="title">Meta-eukomic</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li><li><hr class="dropdown-divider"></li><li><a id="quarto-view-source" class="dropdown-item" href="javascript:void(0)" role="button">View Source</a></li></ul></div></div>
 </div>
 
 
@@ -204,12 +211,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 data-number="2.2" class="anchored" data-anchor-id="trim-qc"><span class="header-section-number">2.2</span> 2. Trim &amp; QC</h2>
 <p><em>Initial Fastqc</em></p>
 <p>Code for slurm script run on the HPC to run fastqc (<code>fastqc.slurm</code>). For this set of samples, it took 10 minutes and used 290 MB. CPU used: 00:12:27.</p>
-<pre><code>module load FastQC/0.11.9-Java-11
-
-fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz
-fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz</code></pre>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>module load FastQC<span class="sc">/</span><span class="dv">0</span>.<span class="fl">11.9</span><span class="sc">-</span>Java<span class="dv">-11</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a></span>
+<span id="cb1-3"><a href="#cb1-3"></a>fastqc <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_001.fastq.gz</span>
+<span id="cb1-4"><a href="#cb1-4"></a>fastqc <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_001.fastq.gz</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
 <p>In order to look at the output <code>.html</code> files, they need to be opened locally.</p>
-<pre><code>scp $HPRC-ADDRESS:/scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001_fastqc.html meta-eukomic/output-files/</code></pre>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>scp <span class="sc">$</span>HPRC<span class="sc">-</span>ADDRESS<span class="sc">:</span><span class="er">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_001_fastqc.html meta<span class="sc">-</span>eukomic<span class="sc">/</span>output<span class="sc">-</span>files<span class="sc">/</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
 <p>Then we need to trim the individual reads, removing any sequencing-based primers, etc. We can use the program, <a href="http://www.usadellab.org/cms/?page=trimmomatic">Trimmomatic</a> for this. R1 reads are forward and R2 are reverse. The Trimmomatic software requires input reads and then output trimmed and unpaired reads (the latter of which are discarded). Another input file required is a list of the possible primers and adapters from sequencing, <code>adapters-primers.fa</code>.</p>
 <p>Slurm script, <code>trim_fastqc.slurm</code>. Below, trim parameter include:</p>
 <ul>
@@ -219,21 +236,103 @@ fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.
 <li><p>Scan the read with a 4-base wide sliding window, cutting when the average quality per base drops below 10 (SLIDINGWINDOW:4:10)</p></li>
 <li><p>Drop reads shorter than 50 bases long (MINLEN:50)</p></li>
 </ul>
-<pre><code>module load Trimmomatic/0.39-Java-11
-
-java -jar $EBROOTTRIMMOMATIC/trimmomatic-0.39.jar PE /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz  /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_unpaired.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_unpaired.fastq.gz ILLUMINACLIP:adapters-primers.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:10 MINLEN:50
-
-# "$EBROOTTRIMMOMATIC/trimmomatic-0.39.jar" note that this is specific to the HPRC system we are using
-
-echo "Trimmomtatic complete. Repeating fastqc"
-
-module load FastQC/0.11.9-Java-11
-
-fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz
-fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz</code></pre>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>module load Trimmomatic<span class="sc">/</span><span class="fl">0.39</span><span class="sc">-</span>Java<span class="dv">-11</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a></span>
+<span id="cb3-3"><a href="#cb3-3"></a>java <span class="sc">-</span>jar <span class="sc">$</span>EBROOTTRIMMOMATIC<span class="sc">/</span>trimmomatic<span class="dv">-0</span>.<span class="fl">39.</span>jar PE <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_001.fastq.gz <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_001.fastq.gz  <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_unpaired.fastq.gz <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_unpaired.fastq.gz ILLUMINACLIP<span class="sc">:</span>adapters<span class="sc">-</span>primers.fa<span class="sc">:</span><span class="dv">2</span><span class="sc">:</span><span class="dv">30</span><span class="sc">:</span><span class="dv">10</span> LEADING<span class="sc">:</span><span class="dv">3</span> TRAILING<span class="sc">:</span><span class="dv">3</span> SLIDINGWINDOW<span class="sc">:</span><span class="dv">4</span><span class="sc">:</span><span class="dv">10</span> MINLEN<span class="sc">:</span><span class="dv">50</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="co"># "$EBROOTTRIMMOMATIC/trimmomatic-0.39.jar" note that this is specific to the HPRC system we are using</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a></span>
+<span id="cb3-7"><a href="#cb3-7"></a>echo <span class="st">"Trimmomtatic complete. Repeating fastqc"</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a></span>
+<span id="cb3-9"><a href="#cb3-9"></a>module load FastQC<span class="sc">/</span><span class="dv">0</span>.<span class="fl">11.9</span><span class="sc">-</span>Java<span class="dv">-11</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a></span>
+<span id="cb3-11"><a href="#cb3-11"></a>fastqc <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz</span>
+<span id="cb3-12"><a href="#cb3-12"></a>fastqc <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
 </section>
-<section id="assembly" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="assembly"><span class="header-section-number">2.3</span> 3. Assembly</h2>
+<section id="remove-ribosomal-rna" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="remove-ribosomal-rna"><span class="header-section-number">2.3</span> 3. Remove ribosomal RNA</h2>
+<p><a href="https://sortmerna.readthedocs.io/en/latest/installation.html">Sortmerna</a> installation guidelines and usage can be found here.</p>
+<p>On the TAMU HPRC, this is where we needed to make a conda environment to run this.</p>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># Load anaconda</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a>module load Anaconda3<span class="sc">/</span><span class="fl">2022.05</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a></span>
+<span id="cb4-4"><a href="#cb4-4"></a><span class="co"># modify bioconda config for sortmeRNA</span></span>
+<span id="cb4-5"><a href="#cb4-5"></a>conda config <span class="sc">--</span>add channels defaults</span>
+<span id="cb4-6"><a href="#cb4-6"></a>conda config <span class="sc">--</span>add channels bioconda</span>
+<span id="cb4-7"><a href="#cb4-7"></a>conda config <span class="sc">--</span>add channels conda<span class="sc">-</span>forge</span>
+<span id="cb4-8"><a href="#cb4-8"></a>conda config <span class="sc">--</span>set channel_priority strict</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Search for sortmerna using conda:</p>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>conda search sortmerna</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Create a conda environment specific for sortmerna, activate it, and install it.</p>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>conda create <span class="sc">--</span>name sortmerna_env</span>
+<span id="cb6-2"><a href="#cb6-2"></a>conda activate sortmerna_env</span>
+<span id="cb6-3"><a href="#cb6-3"></a>conda install sortmerna</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Answer “yes” (<em>Y</em>) to installation questions. Now when you run SortMeRNA, you need to activate this conda environment and execute your code. The next step is to download the databases to use for this program.</p>
+<section id="sortmerna-databases" class="level4">
+<h4 class="anchored" data-anchor-id="sortmerna-databases">SortMeRNA databases</h4>
+<p>Separately, you need to download the databases to “align” and check the sequences for ribosomal RNAs.</p>
+<p>Instructions for <a href="https://sortmerna.readthedocs.io/en/latest/databases.html">downloading version 4</a>:</p>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># Move to the location you want your rRNA databases stored</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a>cd <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span> </span>
+<span id="cb7-3"><a href="#cb7-3"></a></span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="co"># Download from github release </span></span>
+<span id="cb7-5"><a href="#cb7-5"></a>wget https<span class="sc">:</span><span class="er">//</span>github.com<span class="sc">/</span>biocore<span class="sc">/</span>sortmerna<span class="sc">/</span>releases<span class="sc">/</span>download<span class="sc">/</span>v4.<span class="fl">3.4</span><span class="sc">/</span>database.tar.gz</span>
+<span id="cb7-6"><a href="#cb7-6"></a></span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="co"># Make new directory for this and un-zip downloaded file</span></span>
+<span id="cb7-8"><a href="#cb7-8"></a>mkdir rRNA_databases_v4</span>
+<span id="cb7-9"><a href="#cb7-9"></a>tar <span class="sc">-</span>xvf database.tar.gz <span class="sc">-</span>C rRNA_databases_v4</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="run-sortmerna" class="level3">
+<h3 class="anchored" data-anchor-id="run-sortmerna">Run SortMeRNA</h3>
+<p>In your slurm script, activate conda, and then the sortmerna environment:</p>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># Load anaconda</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a>module load Anaconda3<span class="sc">/</span><span class="fl">2022.05</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a>conda activate sortmerna_env</span>
+<span id="cb8-4"><a href="#cb8-4"></a></span>
+<span id="cb8-5"><a href="#cb8-5"></a>mkdir <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>rRNA<span class="sc">-</span>sort</span>
+<span id="cb8-6"><a href="#cb8-6"></a></span>
+<span id="cb8-7"><a href="#cb8-7"></a>sortmerna <span class="sc">-</span>ref <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>rRNA_databases_v4<span class="sc">/</span>smr_v4<span class="fl">.3</span>_sensitive_db.fasta \</span>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="sc">-</span>reads <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz \</span>
+<span id="cb8-9"><a href="#cb8-9"></a><span class="sc">-</span>reads <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz \</span>
+<span id="cb8-10"><a href="#cb8-10"></a><span class="sc">-</span>workdir <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>rRNA<span class="sc">-</span>sort<span class="sc">/</span></span>
+<span id="cb8-11"><a href="#cb8-11"></a><span class="sc">-</span>fastx <span class="sc">--</span>paired_in <span class="sc">--</span>out2 <span class="sc">--</span>threads <span class="sc">$</span>SLURM_CPUS_PER_TASK</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p><code>paired_in</code>: The option ‘paired_in’ is optimal for users who want all reads in the other.fasta file to be non-rRNA. However, there are small chances that reads which are non-rRNA will also be put into the aligned.fasta file.</p>
+<p>Since the SortmeRNA tool is optimitized to take things that are aligned with the rRNA databases and put them in a file called “aligned”, then we need to use the <code>other.fasta</code> output file.</p>
+<p>How do I properly run sortmerna? https://github.com/sortmerna/sortmerna/issues/333</p>
+</section>
+</section>
+<section id="assembly" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="assembly"><span class="header-section-number">2.4</span> 4. Assembly</h2>
 <p>The next step is to take all the sequenced reads and bring them together to make longer, more continuous sequences, called <em>contigs</em>. Here, we will use two assemblers and combine the results. Each one is built slightly differently.</p>
 <section id="megahit-assembly-1" class="level3">
 <h3 class="anchored" data-anchor-id="megahit-assembly-1">MEGAHIT (assembly 1)</h3>
@@ -241,31 +340,99 @@ fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fa
 <p>The megahit command below, outputs contigs in the new <code>assembly</code> directory, only keeps reads longer than 100 bps, and uses the megahit preset for lots of diversity in a sample (<em>meta-large</em>).</p>
 <p>Megahit uses multiple k-mer strategy, and we can set the min and max k. In order to reduce the complexity of the <em>de Bruijin</em> graph, a kmin size of 25 and higher (like 27) is better.</p>
 <p>See slurm script: <code>megahit-assembly.slurm</code></p>
-<pre><code>module load GCCcore/11.2.0
-module load MEGAHIT/1.2.9
-
-megahit -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz -o /scratch/group/hu-lab/meta-eukomics/assembly/ --min-contig-len 1000 --presets meta-large --num-cpu-threads 32</code></pre>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>module load GCCcore<span class="sc">/</span><span class="dv">11</span>.<span class="fl">2.0</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a>module load MEGAHIT<span class="sc">/</span><span class="dv">1</span>.<span class="fl">2.9</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a></span>
+<span id="cb9-4"><a href="#cb9-4"></a>megahit <span class="sc">-</span><span class="dv">1</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz <span class="sc">-</span><span class="dv">2</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz <span class="sc">-</span>o <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span> <span class="sc">--</span>min<span class="sc">-</span>contig<span class="sc">-</span>len <span class="dv">1000</span> <span class="sc">--</span>presets meta<span class="sc">-</span>large <span class="sc">--</span>num<span class="sc">-</span>cpu<span class="sc">-</span>threads <span class="dv">32</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>With the above settings, megahit recovered 31,331 contigs, total 44610184 bp, min 1000 bp, max 10674 bp, avg 1423 bp, N50 1391 bp. And this took about <em>10 hours</em>.</p>
+<p>On the HPC, this was run on 1 node, 4 cores per node, and it used 18.5 GBs of memory.</p>
+<p>Megahit assembly location: <code>/scratch/group/hu-lab/meta-eukomics/assembly/megahit-output/final.contigs.fa</code></p>
+<p><em><em>Optional</em>: Visualize your megahit assembly</em></p>
 <p>When megahit assembly is complete, use this option to visualize it: https://github.com/voutcn/megahit/wiki/Visualizing-MEGAHIT’s-contig-graph</p>
 </section>
 <section id="idba-tran" class="level3">
 <h3 class="anchored" data-anchor-id="idba-tran">IDBA-Tran</h3>
 <p><a href="https://i.cs.hku.hk/~alse/hkubrg/projects/idba_tran/index.html">IDBA-tran</a> is another <em>de novo</em> assembler. Uses local assembly to reconstruct missing kmers in low-expressed transcripts.</p>
 <p>See script: <code>idba-assembly.slurm</code> to run assembly with minimum kmer at 20 and max kmer at 50 with a 5 step increment of kmer.</p>
-<pre><code>module load GCC/8.2.0-2.31.1 
-module load IDBA-UD/1.1.3
-
-# Convert fastq R1 and R2 files into a single 'interleaved` fastq files
-bin/fq2fa --merge --filter /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/assembly/merged-PE-for-idba.fa
-
-# Run assembly
-idba_tran -r /scratch/group/hu-lab/meta-eukomics/assembly/merged-PE-for-idba.fa -o /scratch/group/hu-lab/meta-eukomics/assembly/idba-out --mink 20 --maxk 50 --step 5 --num_threads 16</code></pre>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>echo <span class="st">"unzip files"</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a>gunzip <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R<span class="sc">*</span>_trimmed.fastq.gz</span>
+<span id="cb10-3"><a href="#cb10-3"></a></span>
+<span id="cb10-4"><a href="#cb10-4"></a>module load GCC<span class="sc">/</span><span class="dv">8</span>.<span class="fl">2.0</span><span class="dv">-2</span>.<span class="fl">31.1</span> </span>
+<span id="cb10-5"><a href="#cb10-5"></a>module load IDBA<span class="sc">-</span>UD<span class="sc">/</span><span class="dv">1</span>.<span class="fl">1.3</span></span>
+<span id="cb10-6"><a href="#cb10-6"></a></span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="co"># Convert fastq R1 and R2 files into a single 'interleaved` fastq files</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a>fq2fa <span class="sc">--</span>merge <span class="sc">--</span>filter <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>merged<span class="sc">-</span>PE<span class="sc">-</span><span class="cf">for</span><span class="sc">-</span>idba.fa</span>
+<span id="cb10-9"><a href="#cb10-9"></a></span>
+<span id="cb10-10"><a href="#cb10-10"></a><span class="co"># Run assembly</span></span>
+<span id="cb10-11"><a href="#cb10-11"></a>idba_tran <span class="sc">-</span>r <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>merged<span class="sc">-</span>PE<span class="sc">-</span><span class="cf">for</span><span class="sc">-</span>idba.fa <span class="sc">-</span>o <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>idba<span class="sc">-</span>out <span class="sc">--</span>mink <span class="dv">20</span> <span class="sc">--</span>maxk <span class="dv">50</span> <span class="sc">--</span>step <span class="dv">5</span> <span class="sc">--</span>num_threads <span class="dv">16</span></span>
+<span id="cb10-12"><a href="#cb10-12"></a></span>
+<span id="cb10-13"><a href="#cb10-13"></a><span class="co"># Make sure fastq files are re-zipped:</span></span>
+<span id="cb10-14"><a href="#cb10-14"></a>gzip <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq</span>
+<span id="cb10-15"><a href="#cb10-15"></a>gzip <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Using 8 cores, the IDBA-tran assembly took about 23 hours and used 130 GB of memory.</p>
+<p>The <em>IDBA-tran output</em> includes separation by k-mer length. So there are multiple “contig-X.fa” files. Where <code>contig-25.fa</code> is the output contigs at k-mer = 25. The IDBA program determines which one is best and then puts this into the final <code>contig.fa</code> file. Output: <code>/scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa</code></p>
 </section>
 </section>
-<section id="section" class="level2" data-number="2.4">
-<h2 data-number="2.4" class="anchored" data-anchor-id="section"><span class="header-section-number">2.4</span> 4.</h2>
+<section id="evaluate-assemblies" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="evaluate-assemblies"><span class="header-section-number">2.5</span> 5. Evaluate assemblies</h2>
+<section id="quast" class="level3">
+<h3 class="anchored" data-anchor-id="quast">QUAST</h3>
+<p>QUAST stands for <em>QUality ASsessment Tool</em> and it is a tool for evaluating assemblies. Not all tools for evaluating assemblies will work, as most are built for metagenomics or require a reference genome. In this case, we do not have a reference genome.</p>
+<p><em>First for the IDBA output</em>:</p>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>module load GCC<span class="sc">/</span><span class="dv">9</span>.<span class="fl">3.0</span></span>
+<span id="cb11-2"><a href="#cb11-2"></a>module load OpenMPI<span class="sc">/</span><span class="dv">4</span>.<span class="fl">0.3</span></span>
+<span id="cb11-3"><a href="#cb11-3"></a>module load QUAST<span class="sc">/</span><span class="dv">5</span>.<span class="fl">0.2</span><span class="sc">-</span>Python<span class="dv">-3</span>.<span class="fl">8.2</span></span>
+<span id="cb11-4"><a href="#cb11-4"></a></span>
+<span id="cb11-5"><a href="#cb11-5"></a>quast.py <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>idba<span class="sc">-</span>out<span class="sc">/</span>contig.fa \</span>
+<span id="cb11-6"><a href="#cb11-6"></a>        <span class="sc">-</span><span class="dv">1</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz <span class="sc">-</span><span class="dv">2</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz \</span>
+<span id="cb11-7"><a href="#cb11-7"></a>        <span class="sc">-</span>o <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>idba<span class="sc">-</span>out<span class="sc">/</span> \</span>
+<span id="cb11-8"><a href="#cb11-8"></a>        <span class="sc">--</span>threads <span class="sc">$</span>SLURM_CPUS_PER_TASK</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>This was run on 1 node with 16 cores. It used 3.5 GB of memory in about 1 hour. 6:15 CPUs used.</p>
+<p><em>Repeat for the megahit output</em></p>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>module load GCC<span class="sc">/</span><span class="dv">9</span>.<span class="fl">3.0</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a>module load OpenMPI<span class="sc">/</span><span class="dv">4</span>.<span class="fl">0.3</span></span>
+<span id="cb12-3"><a href="#cb12-3"></a>module load QUAST<span class="sc">/</span><span class="dv">5</span>.<span class="fl">0.2</span><span class="sc">-</span>Python<span class="dv">-3</span>.<span class="fl">8.2</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a></span>
+<span id="cb12-5"><a href="#cb12-5"></a>quast.py <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>megahit<span class="sc">-</span>output<span class="sc">/</span>final.contigs.fa \</span>
+<span id="cb12-6"><a href="#cb12-6"></a>        <span class="sc">-</span><span class="dv">1</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz <span class="sc">-</span><span class="dv">2</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz \</span>
+<span id="cb12-7"><a href="#cb12-7"></a>        <span class="sc">-</span>o <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>megahit<span class="sc">-</span>output<span class="sc">/</span> \</span>
+<span id="cb12-8"><a href="#cb12-8"></a>        <span class="sc">--</span>threads <span class="sc">$</span>SLURM_CPUS_PER_TASK</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<section id="interpret-quast" class="level4">
+<h4 class="anchored" data-anchor-id="interpret-quast">Interpret QUAST</h4>
+<p>Download files locally from:</p>
+<ul>
+<li>PDF files: <code>meta-eukomics/assembly/*-out/basic_stats/*.pdf</code></li>
+<li>Use an ICARUS html viewer: <code>meta-eukomics/assembly/*-out/icarus*</code></li>
+<li>Basic read stats: <code>meta-eukomics/assembly/*-out/reads_stats/reads_report.tsv</code></li>
+</ul>
 </section>
-<section id="metatranscriptome-run-information" class="level2" data-number="2.5">
-<h2 data-number="2.5" class="anchored" data-anchor-id="metatranscriptome-run-information"><span class="header-section-number">2.5</span> Metatranscriptome run information</h2>
+</section>
+<section id="section" class="level3">
+<h3 class="anchored" data-anchor-id="section"></h3>
+</section>
+</section>
+<section id="metatranscriptome-run-information" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="metatranscriptome-run-information"><span class="header-section-number">2.6</span> Metatranscriptome run information</h2>
 <table class="table">
 <thead>
 <tr class="header">
@@ -283,13 +450,21 @@ idba_tran -r /scratch/group/hu-lab/meta-eukomics/assembly/merged-PE-for-idba.fa 
 <td>0.39</td>
 </tr>
 <tr class="odd">
+<td>SortMeRNA</td>
+<td>4.3.7</td>
+</tr>
+<tr class="even">
 <td>megahit</td>
 <td>1.2.9</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>IDBA-Tran</td>
 <td>1.1.3</td>
 </tr>
+<tr class="even">
+<td>quast</td>
+<td>5.0.2</td>
+</tr>
 <tr class="odd">
 <td></td>
 <td></td>
@@ -307,15 +482,21 @@ idba_tran -r /scratch/group/hu-lab/meta-eukomics/assembly/merged-PE-for-idba.fa 
 <td></td>
 </tr>
 <tr class="odd">
-<td></td>
-<td></td>
-</tr>
-<tr class="even">
 <td></td>
 <td></td>
 </tr>
 </tbody>
 </table>
+<section id="citations" class="level4">
+<h4 class="anchored" data-anchor-id="citations">Citations</h4>
+<ul>
+<li><p>[fastqc]</p></li>
+<li><p>[trimmomatic]</p></li>
+<li><p>SortMeRNA: Kopylova E., Noe L. and Touzet H., “SortMeRNA: Fast and accurate filtering of ribosomal RNAs in metatranscriptomic data”, Bioinformatics (2012), doi: 10.1093/bioinformatics/bts611.</p></li>
+<li><p>[megahit]</p></li>
+<li><p><a href="https://academic.oup.com/bioinformatics/article/29/13/i326/191893">IDBA-Tran</a></p></li>
+</ul>
+</section>
 </section>
 </section>
 <section id="eukrhythmic" class="level1" data-number="3">
@@ -611,147 +792,307 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   }
 });
 </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
-<div class="sourceCode" id="cb6" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Meta-eukomic"</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: show</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">    code-copy: true</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">    toc: true</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">    toc-location: left</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">    number-sections: true</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">    number-depth: 2</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="an">editor:</span><span class="co"> visual</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="fu"># Meta-eukomic</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>*SKH* last updated June 2024</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>Location for raw files: <span class="in">`/scratch/group/hu-lab/meta-eukomics/raw-data`</span> Individual R1 and R2 files are 2.9 and 2.7 G, respectively.</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="fu">## Background reading</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="ss">1.  </span>Cohen NR, Alexander H, Krinos AI, Hu SK, Lampe RH. Marine Microeukaryote Metatranscriptomics: Sample Processing and Bioinformatic Workflow Recommendations for Ecological Applications. Frontiers in Marine Science 2022; 9.</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="ss">2.  </span>Krinos AI, Cohen NR, Follows MJ, Alexander H. Reverse engineering environmental metatranscriptomes clarifies best practices for eukaryotic assembly. BMC Bioinformatics 2023; 24: 74.</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="fu">## Working environment</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>High performace computer (HPC) hosted by my University. This is the TAMU HPRC</span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="fu"># Step-by-step</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="fu">## 1. Determine assembly groups</span></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="fu">## 2. Trim &amp; QC</span></span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>*Initial Fastqc*</span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>Code for slurm script run on the HPC to run fastqc (<span class="in">`fastqc.slurm`</span>). For this set of samples, it took 10 minutes and used 290 MB. CPU used: 00:12:27.</span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a><span class="in">```         </span></span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a><span class="in">module load FastQC/0.11.9-Java-11</span></span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a><span class="in">fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz</span></span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="in">fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz</span></span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>In order to look at the output <span class="in">`.html`</span> files, they need to be opened locally.</span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a><span class="in">```         </span></span>
-<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a><span class="in">scp $HPRC-ADDRESS:/scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001_fastqc.html meta-eukomic/output-files/</span></span>
-<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>Then we need to trim the individual reads, removing any sequencing-based primers, etc. We can use the program, <span class="co">[</span><span class="ot">Trimmomatic</span><span class="co">](http://www.usadellab.org/cms/?page=trimmomatic)</span> for this. R1 reads are forward and R2 are reverse. The Trimmomatic software requires input reads and then output trimmed and unpaired reads (the latter of which are discarded). Another input file required is a list of the possible primers and adapters from sequencing, <span class="in">`adapters-primers.fa`</span>.</span>
-<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>Slurm script, <span class="in">`trim_fastqc.slurm`</span>. Below, trim parameter include:</span>
-<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="ss">* </span>Remove adapters, found in <span class="in">`adapters-primers.fa`</span></span>
-<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a><span class="ss">* </span>Remove leading low quality or N bases (below quality 3) (LEADING:3)</span>
-<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a><span class="ss">* </span>Remove trailing low quality or N bases (below quality 3) (TRAILING:3)</span>
-<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a><span class="ss">* </span>Scan the read with a 4-base wide sliding window, cutting when the average quality per base drops below 10 (SLIDINGWINDOW:4:10)</span>
-<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a><span class="ss">* </span>Drop reads shorter than 50 bases long (MINLEN:50)</span>
-<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a><span class="in">```         </span></span>
-<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a><span class="in">module load Trimmomatic/0.39-Java-11</span></span>
-<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a><span class="in">java -jar $EBROOTTRIMMOMATIC/trimmomatic-0.39.jar PE /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz  /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_unpaired.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_unpaired.fastq.gz ILLUMINACLIP:adapters-primers.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:10 MINLEN:50</span></span>
-<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a><span class="in"># "$EBROOTTRIMMOMATIC/trimmomatic-0.39.jar" note that this is specific to the HPRC system we are using</span></span>
-<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a><span class="in">echo "Trimmomtatic complete. Repeating fastqc"</span></span>
-<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a><span class="in">module load FastQC/0.11.9-Java-11</span></span>
-<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a><span class="in">fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz</span></span>
-<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a><span class="in">fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz</span></span>
-<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a><span class="fu">## 3. Assembly</span></span>
-<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a>The next step is to take all the sequenced reads and bring them together to make longer, more continuous sequences, called *contigs*. Here, we will use two assemblers and combine the results. Each one is built slightly differently.</span>
-<span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a><span class="fu">### MEGAHIT (assembly 1)</span></span>
-<span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a>We will first use <span class="co">[</span><span class="ot">megahit</span><span class="co">](https://github.com/voutcn/megahit)</span>. To save the assemblies separately, make a new assembly output file in your working <span class="in">`scratch`</span> space. <span class="in">`mkdir /scratch/group/hu-lab/meta-eukomics/assembly`</span></span>
-<span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-91"><a href="#cb6-91" aria-hidden="true" tabindex="-1"></a>The megahit command below, outputs contigs in the new <span class="in">`assembly`</span> directory, only keeps reads longer than 100 bps, and uses the megahit preset for lots of diversity in a sample (_meta-large_).</span>
-<span id="cb6-92"><a href="#cb6-92" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-93"><a href="#cb6-93" aria-hidden="true" tabindex="-1"></a>Megahit uses multiple k-mer strategy, and we can set the min and max k. In order to reduce the complexity of the _de Bruijin_ graph, a kmin size of 25 and higher (like 27) is better. </span>
-<span id="cb6-94"><a href="#cb6-94" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-95"><a href="#cb6-95" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-96"><a href="#cb6-96" aria-hidden="true" tabindex="-1"></a>See slurm script: <span class="in">`megahit-assembly.slurm`</span></span>
-<span id="cb6-97"><a href="#cb6-97" aria-hidden="true" tabindex="-1"></a><span class="in">```         </span></span>
-<span id="cb6-98"><a href="#cb6-98" aria-hidden="true" tabindex="-1"></a><span class="in">module load GCCcore/11.2.0</span></span>
-<span id="cb6-99"><a href="#cb6-99" aria-hidden="true" tabindex="-1"></a><span class="in">module load MEGAHIT/1.2.9</span></span>
-<span id="cb6-100"><a href="#cb6-100" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-101"><a href="#cb6-101" aria-hidden="true" tabindex="-1"></a><span class="in">megahit -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz -o /scratch/group/hu-lab/meta-eukomics/assembly/ --min-contig-len 1000 --presets meta-large --num-cpu-threads 32</span></span>
-<span id="cb6-102"><a href="#cb6-102" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb6-103"><a href="#cb6-103" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-104"><a href="#cb6-104" aria-hidden="true" tabindex="-1"></a>When megahit assembly is complete, use this option to visualize it: https://github.com/voutcn/megahit/wiki/Visualizing-MEGAHIT's-contig-graph</span>
-<span id="cb6-105"><a href="#cb6-105" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-106"><a href="#cb6-106" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-107"><a href="#cb6-107" aria-hidden="true" tabindex="-1"></a><span class="fu">### IDBA-Tran</span></span>
-<span id="cb6-108"><a href="#cb6-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-109"><a href="#cb6-109" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">IDBA-tran</span><span class="co">](https://i.cs.hku.hk/~alse/hkubrg/projects/idba_tran/index.html)</span> is another _de novo_ assembler. Uses local assembly to reconstruct missing kmers in low-expressed transcripts.</span>
-<span id="cb6-110"><a href="#cb6-110" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-111"><a href="#cb6-111" aria-hidden="true" tabindex="-1"></a>See script: <span class="in">`idba-assembly.slurm`</span> to run assembly with minimum kmer at 20 and max kmer at 50 with a 5 step increment of kmer.</span>
-<span id="cb6-112"><a href="#cb6-112" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb6-113"><a href="#cb6-113" aria-hidden="true" tabindex="-1"></a><span class="in">module load GCC/8.2.0-2.31.1 </span></span>
-<span id="cb6-114"><a href="#cb6-114" aria-hidden="true" tabindex="-1"></a><span class="in">module load IDBA-UD/1.1.3</span></span>
-<span id="cb6-115"><a href="#cb6-115" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-116"><a href="#cb6-116" aria-hidden="true" tabindex="-1"></a><span class="in"># Convert fastq R1 and R2 files into a single 'interleaved` fastq files</span></span>
-<span id="cb6-117"><a href="#cb6-117" aria-hidden="true" tabindex="-1"></a><span class="in">bin/fq2fa --merge --filter /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/assembly/merged-PE-for-idba.fa</span></span>
-<span id="cb6-118"><a href="#cb6-118" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-119"><a href="#cb6-119" aria-hidden="true" tabindex="-1"></a><span class="in"># Run assembly</span></span>
-<span id="cb6-120"><a href="#cb6-120" aria-hidden="true" tabindex="-1"></a><span class="in">idba_tran -r /scratch/group/hu-lab/meta-eukomics/assembly/merged-PE-for-idba.fa -o /scratch/group/hu-lab/meta-eukomics/assembly/idba-out --mink 20 --maxk 50 --step 5 --num_threads 16</span></span>
-<span id="cb6-121"><a href="#cb6-121" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb6-122"><a href="#cb6-122" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-123"><a href="#cb6-123" aria-hidden="true" tabindex="-1"></a><span class="fu">## 4. </span></span>
-<span id="cb6-124"><a href="#cb6-124" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-125"><a href="#cb6-125" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-126"><a href="#cb6-126" aria-hidden="true" tabindex="-1"></a><span class="fu">## Metatranscriptome run information</span></span>
-<span id="cb6-127"><a href="#cb6-127" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-128"><a href="#cb6-128" aria-hidden="true" tabindex="-1"></a>| Software    | Version |</span>
-<span id="cb6-129"><a href="#cb6-129" aria-hidden="true" tabindex="-1"></a>|-------------|---------|</span>
-<span id="cb6-130"><a href="#cb6-130" aria-hidden="true" tabindex="-1"></a>| Fastqc      | 0.11.9  |</span>
-<span id="cb6-131"><a href="#cb6-131" aria-hidden="true" tabindex="-1"></a>| Trimmomatic | 0.39    |</span>
-<span id="cb6-132"><a href="#cb6-132" aria-hidden="true" tabindex="-1"></a>| megahit     | 1.2.9   |</span>
-<span id="cb6-133"><a href="#cb6-133" aria-hidden="true" tabindex="-1"></a>| IDBA-Tran   | 1.1.3   |</span>
-<span id="cb6-134"><a href="#cb6-134" aria-hidden="true" tabindex="-1"></a>|             |         |</span>
-<span id="cb6-135"><a href="#cb6-135" aria-hidden="true" tabindex="-1"></a>|             |         |</span>
-<span id="cb6-136"><a href="#cb6-136" aria-hidden="true" tabindex="-1"></a>|             |         |</span>
-<span id="cb6-137"><a href="#cb6-137" aria-hidden="true" tabindex="-1"></a>|             |         |</span>
-<span id="cb6-138"><a href="#cb6-138" aria-hidden="true" tabindex="-1"></a>|             |         |</span>
-<span id="cb6-139"><a href="#cb6-139" aria-hidden="true" tabindex="-1"></a>|             |         |</span>
-<span id="cb6-140"><a href="#cb6-140" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-141"><a href="#cb6-141" aria-hidden="true" tabindex="-1"></a><span class="fu"># eukrhythmic</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb13" data-shortcodes="false"><pre class="sourceCode numberSource markdown number-lines code-with-copy"><code class="sourceCode markdown"><span id="cb13-1"><a href="#cb13-1"></a><span class="co">---</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="an">title:</span><span class="co"> "Meta-eukomic"</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a><span class="an">format:</span></span>
+<span id="cb13-4"><a href="#cb13-4"></a><span class="co">  html:</span></span>
+<span id="cb13-5"><a href="#cb13-5"></a><span class="co">    toc: true</span></span>
+<span id="cb13-6"><a href="#cb13-6"></a><span class="co">    toc-location: left</span></span>
+<span id="cb13-7"><a href="#cb13-7"></a><span class="co">    number-sections: true</span></span>
+<span id="cb13-8"><a href="#cb13-8"></a><span class="co">    number-depth: 2</span></span>
+<span id="cb13-9"><a href="#cb13-9"></a><span class="an">editor:</span><span class="co"> visual</span></span>
+<span id="cb13-10"><a href="#cb13-10"></a><span class="co">---</span></span>
+<span id="cb13-11"><a href="#cb13-11"></a></span>
+<span id="cb13-12"><a href="#cb13-12"></a><span class="fu"># Meta-eukomic</span></span>
+<span id="cb13-13"><a href="#cb13-13"></a></span>
+<span id="cb13-14"><a href="#cb13-14"></a>*SKH* last updated June 2024</span>
+<span id="cb13-15"><a href="#cb13-15"></a></span>
+<span id="cb13-16"><a href="#cb13-16"></a>Location for raw files: <span class="in">`/scratch/group/hu-lab/meta-eukomics/raw-data`</span> Individual R1 and R2 files are 2.9 and 2.7 G, respectively.</span>
+<span id="cb13-17"><a href="#cb13-17"></a></span>
+<span id="cb13-18"><a href="#cb13-18"></a><span class="fu">## Background reading</span></span>
+<span id="cb13-19"><a href="#cb13-19"></a></span>
+<span id="cb13-20"><a href="#cb13-20"></a><span class="ss">1.  </span>Cohen NR, Alexander H, Krinos AI, Hu SK, Lampe RH. Marine Microeukaryote Metatranscriptomics: Sample Processing and Bioinformatic Workflow Recommendations for Ecological Applications. Frontiers in Marine Science 2022; 9.</span>
+<span id="cb13-21"><a href="#cb13-21"></a></span>
+<span id="cb13-22"><a href="#cb13-22"></a><span class="ss">2.  </span>Krinos AI, Cohen NR, Follows MJ, Alexander H. Reverse engineering environmental metatranscriptomes clarifies best practices for eukaryotic assembly. BMC Bioinformatics 2023; 24: 74.</span>
+<span id="cb13-23"><a href="#cb13-23"></a></span>
+<span id="cb13-24"><a href="#cb13-24"></a><span class="fu">## Working environment</span></span>
+<span id="cb13-25"><a href="#cb13-25"></a></span>
+<span id="cb13-26"><a href="#cb13-26"></a>High performace computer (HPC) hosted by my University. This is the TAMU HPRC</span>
+<span id="cb13-27"><a href="#cb13-27"></a></span>
+<span id="cb13-28"><a href="#cb13-28"></a><span class="fu"># Step-by-step</span></span>
+<span id="cb13-29"><a href="#cb13-29"></a></span>
+<span id="cb13-30"><a href="#cb13-30"></a><span class="fu">## 1. Determine assembly groups</span></span>
+<span id="cb13-31"><a href="#cb13-31"></a></span>
+<span id="cb13-32"><a href="#cb13-32"></a><span class="fu">## 2. Trim &amp; QC</span></span>
+<span id="cb13-33"><a href="#cb13-33"></a></span>
+<span id="cb13-34"><a href="#cb13-34"></a>*Initial Fastqc*</span>
+<span id="cb13-35"><a href="#cb13-35"></a></span>
+<span id="cb13-36"><a href="#cb13-36"></a>Code for slurm script run on the HPC to run fastqc (<span class="in">`fastqc.slurm`</span>). For this set of samples, it took 10 minutes and used 290 MB. CPU used: 00:12:27.</span>
+<span id="cb13-37"><a href="#cb13-37"></a></span>
+<span id="cb13-40"><a href="#cb13-40"></a><span class="in">```{r}</span></span>
+<span id="cb13-41"><a href="#cb13-41"></a>module load FastQC<span class="sc">/</span><span class="dv">0</span>.<span class="fl">11.9</span><span class="sc">-</span>Java<span class="dv">-11</span></span>
+<span id="cb13-42"><a href="#cb13-42"></a></span>
+<span id="cb13-43"><a href="#cb13-43"></a>fastqc <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_001.fastq.gz</span>
+<span id="cb13-44"><a href="#cb13-44"></a>fastqc <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_001.fastq.gz</span>
+<span id="cb13-45"><a href="#cb13-45"></a><span class="in">```</span></span>
+<span id="cb13-46"><a href="#cb13-46"></a></span>
+<span id="cb13-47"><a href="#cb13-47"></a></span>
+<span id="cb13-48"><a href="#cb13-48"></a>In order to look at the output <span class="in">`.html`</span> files, they need to be opened locally.</span>
+<span id="cb13-49"><a href="#cb13-49"></a></span>
+<span id="cb13-52"><a href="#cb13-52"></a><span class="in">```{r}</span></span>
+<span id="cb13-53"><a href="#cb13-53"></a>scp <span class="sc">$</span>HPRC<span class="sc">-</span>ADDRESS<span class="sc">:</span><span class="er">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_001_fastqc.html meta<span class="sc">-</span>eukomic<span class="sc">/</span>output<span class="sc">-</span>files<span class="sc">/</span></span>
+<span id="cb13-54"><a href="#cb13-54"></a><span class="in">```</span></span>
+<span id="cb13-55"><a href="#cb13-55"></a></span>
+<span id="cb13-56"><a href="#cb13-56"></a>Then we need to trim the individual reads, removing any sequencing-based primers, etc. We can use the program, <span class="co">[</span><span class="ot">Trimmomatic</span><span class="co">](http://www.usadellab.org/cms/?page=trimmomatic)</span> for this. R1 reads are forward and R2 are reverse. The Trimmomatic software requires input reads and then output trimmed and unpaired reads (the latter of which are discarded). Another input file required is a list of the possible primers and adapters from sequencing, <span class="in">`adapters-primers.fa`</span>.</span>
+<span id="cb13-57"><a href="#cb13-57"></a></span>
+<span id="cb13-58"><a href="#cb13-58"></a>Slurm script, <span class="in">`trim_fastqc.slurm`</span>. Below, trim parameter include:</span>
+<span id="cb13-59"><a href="#cb13-59"></a></span>
+<span id="cb13-60"><a href="#cb13-60"></a><span class="ss">* </span>Remove adapters, found in <span class="in">`adapters-primers.fa`</span></span>
+<span id="cb13-61"><a href="#cb13-61"></a></span>
+<span id="cb13-62"><a href="#cb13-62"></a><span class="ss">* </span>Remove leading low quality or N bases (below quality 3) (LEADING:3)</span>
+<span id="cb13-63"><a href="#cb13-63"></a></span>
+<span id="cb13-64"><a href="#cb13-64"></a><span class="ss">* </span>Remove trailing low quality or N bases (below quality 3) (TRAILING:3)</span>
+<span id="cb13-65"><a href="#cb13-65"></a></span>
+<span id="cb13-66"><a href="#cb13-66"></a><span class="ss">* </span>Scan the read with a 4-base wide sliding window, cutting when the average quality per base drops below 10 (SLIDINGWINDOW:4:10)</span>
+<span id="cb13-67"><a href="#cb13-67"></a></span>
+<span id="cb13-68"><a href="#cb13-68"></a><span class="ss">* </span>Drop reads shorter than 50 bases long (MINLEN:50)</span>
+<span id="cb13-69"><a href="#cb13-69"></a></span>
+<span id="cb13-72"><a href="#cb13-72"></a><span class="in">```{r}</span></span>
+<span id="cb13-73"><a href="#cb13-73"></a>module load Trimmomatic<span class="sc">/</span><span class="fl">0.39</span><span class="sc">-</span>Java<span class="dv">-11</span></span>
+<span id="cb13-74"><a href="#cb13-74"></a></span>
+<span id="cb13-75"><a href="#cb13-75"></a>java <span class="sc">-</span>jar <span class="sc">$</span>EBROOTTRIMMOMATIC<span class="sc">/</span>trimmomatic<span class="dv">-0</span>.<span class="fl">39.</span>jar PE <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_001.fastq.gz <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_001.fastq.gz  <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_unpaired.fastq.gz <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_unpaired.fastq.gz ILLUMINACLIP<span class="sc">:</span>adapters<span class="sc">-</span>primers.fa<span class="sc">:</span><span class="dv">2</span><span class="sc">:</span><span class="dv">30</span><span class="sc">:</span><span class="dv">10</span> LEADING<span class="sc">:</span><span class="dv">3</span> TRAILING<span class="sc">:</span><span class="dv">3</span> SLIDINGWINDOW<span class="sc">:</span><span class="dv">4</span><span class="sc">:</span><span class="dv">10</span> MINLEN<span class="sc">:</span><span class="dv">50</span></span>
+<span id="cb13-76"><a href="#cb13-76"></a></span>
+<span id="cb13-77"><a href="#cb13-77"></a><span class="co"># "$EBROOTTRIMMOMATIC/trimmomatic-0.39.jar" note that this is specific to the HPRC system we are using</span></span>
+<span id="cb13-78"><a href="#cb13-78"></a></span>
+<span id="cb13-79"><a href="#cb13-79"></a>echo <span class="st">"Trimmomtatic complete. Repeating fastqc"</span></span>
+<span id="cb13-80"><a href="#cb13-80"></a></span>
+<span id="cb13-81"><a href="#cb13-81"></a>module load FastQC<span class="sc">/</span><span class="dv">0</span>.<span class="fl">11.9</span><span class="sc">-</span>Java<span class="dv">-11</span></span>
+<span id="cb13-82"><a href="#cb13-82"></a></span>
+<span id="cb13-83"><a href="#cb13-83"></a>fastqc <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz</span>
+<span id="cb13-84"><a href="#cb13-84"></a>fastqc <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz</span>
+<span id="cb13-85"><a href="#cb13-85"></a><span class="in">```</span></span>
+<span id="cb13-86"><a href="#cb13-86"></a></span>
+<span id="cb13-87"><a href="#cb13-87"></a><span class="fu">## 3. Remove ribosomal RNA</span></span>
+<span id="cb13-88"><a href="#cb13-88"></a></span>
+<span id="cb13-89"><a href="#cb13-89"></a><span class="co">[</span><span class="ot">Sortmerna</span><span class="co">](https://sortmerna.readthedocs.io/en/latest/installation.html)</span> installation guidelines and usage can be found here.</span>
+<span id="cb13-90"><a href="#cb13-90"></a></span>
+<span id="cb13-91"><a href="#cb13-91"></a>On the TAMU HPRC, this is where we needed to make a conda environment to run this.</span>
+<span id="cb13-92"><a href="#cb13-92"></a></span>
+<span id="cb13-95"><a href="#cb13-95"></a><span class="in">```{r}</span></span>
+<span id="cb13-96"><a href="#cb13-96"></a><span class="co"># Load anaconda</span></span>
+<span id="cb13-97"><a href="#cb13-97"></a>module load Anaconda3<span class="sc">/</span><span class="fl">2022.05</span></span>
+<span id="cb13-98"><a href="#cb13-98"></a></span>
+<span id="cb13-99"><a href="#cb13-99"></a><span class="co"># modify bioconda config for sortmeRNA</span></span>
+<span id="cb13-100"><a href="#cb13-100"></a>conda config <span class="sc">--</span>add channels defaults</span>
+<span id="cb13-101"><a href="#cb13-101"></a>conda config <span class="sc">--</span>add channels bioconda</span>
+<span id="cb13-102"><a href="#cb13-102"></a>conda config <span class="sc">--</span>add channels conda<span class="sc">-</span>forge</span>
+<span id="cb13-103"><a href="#cb13-103"></a>conda config <span class="sc">--</span>set channel_priority strict</span>
+<span id="cb13-104"><a href="#cb13-104"></a><span class="in">```</span></span>
+<span id="cb13-105"><a href="#cb13-105"></a></span>
+<span id="cb13-106"><a href="#cb13-106"></a>Search for sortmerna using conda:</span>
+<span id="cb13-109"><a href="#cb13-109"></a><span class="in">```{r}</span></span>
+<span id="cb13-110"><a href="#cb13-110"></a>conda search sortmerna</span>
+<span id="cb13-111"><a href="#cb13-111"></a><span class="in">```</span></span>
+<span id="cb13-112"><a href="#cb13-112"></a>Create a conda environment specific for sortmerna, activate it, and install it.</span>
+<span id="cb13-115"><a href="#cb13-115"></a><span class="in">```{r}</span></span>
+<span id="cb13-116"><a href="#cb13-116"></a>conda create <span class="sc">--</span>name sortmerna_env</span>
+<span id="cb13-117"><a href="#cb13-117"></a>conda activate sortmerna_env</span>
+<span id="cb13-118"><a href="#cb13-118"></a>conda install sortmerna</span>
+<span id="cb13-119"><a href="#cb13-119"></a><span class="in">```</span></span>
+<span id="cb13-120"><a href="#cb13-120"></a></span>
+<span id="cb13-121"><a href="#cb13-121"></a>Answer "yes" (*Y*) to installation questions. Now when you run SortMeRNA, you need to activate this conda environment and execute your code. The next step is to download the databases to use for this program.</span>
+<span id="cb13-122"><a href="#cb13-122"></a></span>
+<span id="cb13-123"><a href="#cb13-123"></a></span>
+<span id="cb13-124"><a href="#cb13-124"></a><span class="fu">#### SortMeRNA databases</span></span>
+<span id="cb13-125"><a href="#cb13-125"></a></span>
+<span id="cb13-126"><a href="#cb13-126"></a>Separately, you need to download the databases to "align" and check the sequences for ribosomal RNAs.</span>
+<span id="cb13-127"><a href="#cb13-127"></a></span>
+<span id="cb13-128"><a href="#cb13-128"></a></span>
+<span id="cb13-129"><a href="#cb13-129"></a>Instructions for <span class="co">[</span><span class="ot">downloading version 4</span><span class="co">](https://sortmerna.readthedocs.io/en/latest/databases.html)</span>:</span>
+<span id="cb13-132"><a href="#cb13-132"></a><span class="in">```{r}</span></span>
+<span id="cb13-133"><a href="#cb13-133"></a><span class="co"># Move to the location you want your rRNA databases stored</span></span>
+<span id="cb13-134"><a href="#cb13-134"></a>cd <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span> </span>
+<span id="cb13-135"><a href="#cb13-135"></a></span>
+<span id="cb13-136"><a href="#cb13-136"></a><span class="co"># Download from github release </span></span>
+<span id="cb13-137"><a href="#cb13-137"></a>wget https<span class="sc">:</span><span class="er">//</span>github.com<span class="sc">/</span>biocore<span class="sc">/</span>sortmerna<span class="sc">/</span>releases<span class="sc">/</span>download<span class="sc">/</span>v4.<span class="fl">3.4</span><span class="sc">/</span>database.tar.gz</span>
+<span id="cb13-138"><a href="#cb13-138"></a></span>
+<span id="cb13-139"><a href="#cb13-139"></a><span class="co"># Make new directory for this and un-zip downloaded file</span></span>
+<span id="cb13-140"><a href="#cb13-140"></a>mkdir rRNA_databases_v4</span>
+<span id="cb13-141"><a href="#cb13-141"></a>tar <span class="sc">-</span>xvf database.tar.gz <span class="sc">-</span>C rRNA_databases_v4</span>
+<span id="cb13-142"><a href="#cb13-142"></a><span class="in">```</span></span>
+<span id="cb13-143"><a href="#cb13-143"></a></span>
+<span id="cb13-144"><a href="#cb13-144"></a><span class="fu">### Run SortMeRNA</span></span>
+<span id="cb13-145"><a href="#cb13-145"></a></span>
+<span id="cb13-146"><a href="#cb13-146"></a></span>
+<span id="cb13-147"><a href="#cb13-147"></a>In your slurm script, activate conda, and then the sortmerna environment:</span>
+<span id="cb13-150"><a href="#cb13-150"></a><span class="in">```{r}</span></span>
+<span id="cb13-151"><a href="#cb13-151"></a><span class="co"># Load anaconda</span></span>
+<span id="cb13-152"><a href="#cb13-152"></a>module load Anaconda3<span class="sc">/</span><span class="fl">2022.05</span></span>
+<span id="cb13-153"><a href="#cb13-153"></a>conda activate sortmerna_env</span>
+<span id="cb13-154"><a href="#cb13-154"></a></span>
+<span id="cb13-155"><a href="#cb13-155"></a>mkdir <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>rRNA<span class="sc">-</span>sort</span>
+<span id="cb13-156"><a href="#cb13-156"></a></span>
+<span id="cb13-157"><a href="#cb13-157"></a>sortmerna <span class="sc">-</span>ref <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>rRNA_databases_v4<span class="sc">/</span>smr_v4<span class="fl">.3</span>_sensitive_db.fasta \</span>
+<span id="cb13-158"><a href="#cb13-158"></a><span class="sc">-</span>reads <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz \</span>
+<span id="cb13-159"><a href="#cb13-159"></a><span class="sc">-</span>reads <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz \</span>
+<span id="cb13-160"><a href="#cb13-160"></a><span class="sc">-</span>workdir <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>rRNA<span class="sc">-</span>sort<span class="sc">/</span></span>
+<span id="cb13-161"><a href="#cb13-161"></a><span class="sc">-</span>fastx <span class="sc">--</span>paired_in <span class="sc">--</span>out2 <span class="sc">--</span>threads <span class="sc">$</span>SLURM_CPUS_PER_TASK</span>
+<span id="cb13-162"><a href="#cb13-162"></a><span class="in">```</span></span>
+<span id="cb13-163"><a href="#cb13-163"></a></span>
+<span id="cb13-164"><a href="#cb13-164"></a><span class="in">`paired_in`</span>: The option ‘paired_in’ is optimal for users who want all reads in the other.fasta file to be non-rRNA. However, there are small chances that reads which are non-rRNA will also be put into the aligned.fasta file.</span>
+<span id="cb13-165"><a href="#cb13-165"></a></span>
+<span id="cb13-166"><a href="#cb13-166"></a>Since the SortmeRNA tool is optimitized to take things that are aligned with the rRNA databases and put them in a file called "aligned", then we need to use the <span class="in">`other.fasta`</span> output file. </span>
+<span id="cb13-167"><a href="#cb13-167"></a></span>
+<span id="cb13-168"><a href="#cb13-168"></a>How do I properly run sortmerna? https://github.com/sortmerna/sortmerna/issues/333</span>
+<span id="cb13-169"><a href="#cb13-169"></a></span>
+<span id="cb13-170"><a href="#cb13-170"></a></span>
+<span id="cb13-171"><a href="#cb13-171"></a></span>
+<span id="cb13-172"><a href="#cb13-172"></a><span class="fu">## 4. Assembly</span></span>
+<span id="cb13-173"><a href="#cb13-173"></a></span>
+<span id="cb13-174"><a href="#cb13-174"></a>The next step is to take all the sequenced reads and bring them together to make longer, more continuous sequences, called *contigs*. Here, we will use two assemblers and combine the results. Each one is built slightly differently.</span>
+<span id="cb13-175"><a href="#cb13-175"></a></span>
+<span id="cb13-176"><a href="#cb13-176"></a><span class="fu">### MEGAHIT (assembly 1)</span></span>
+<span id="cb13-177"><a href="#cb13-177"></a></span>
+<span id="cb13-178"><a href="#cb13-178"></a>We will first use <span class="co">[</span><span class="ot">megahit</span><span class="co">](https://github.com/voutcn/megahit)</span>. To save the assemblies separately, make a new assembly output file in your working <span class="in">`scratch`</span> space. <span class="in">`mkdir /scratch/group/hu-lab/meta-eukomics/assembly`</span></span>
+<span id="cb13-179"><a href="#cb13-179"></a></span>
+<span id="cb13-180"><a href="#cb13-180"></a>The megahit command below, outputs contigs in the new <span class="in">`assembly`</span> directory, only keeps reads longer than 100 bps, and uses the megahit preset for lots of diversity in a sample (_meta-large_).</span>
+<span id="cb13-181"><a href="#cb13-181"></a></span>
+<span id="cb13-182"><a href="#cb13-182"></a>Megahit uses multiple k-mer strategy, and we can set the min and max k. In order to reduce the complexity of the _de Bruijin_ graph, a kmin size of 25 and higher (like 27) is better. </span>
+<span id="cb13-183"><a href="#cb13-183"></a></span>
+<span id="cb13-184"><a href="#cb13-184"></a></span>
+<span id="cb13-185"><a href="#cb13-185"></a>See slurm script: <span class="in">`megahit-assembly.slurm`</span></span>
+<span id="cb13-188"><a href="#cb13-188"></a><span class="in">```{r}</span></span>
+<span id="cb13-189"><a href="#cb13-189"></a>module load GCCcore<span class="sc">/</span><span class="dv">11</span>.<span class="fl">2.0</span></span>
+<span id="cb13-190"><a href="#cb13-190"></a>module load MEGAHIT<span class="sc">/</span><span class="dv">1</span>.<span class="fl">2.9</span></span>
+<span id="cb13-191"><a href="#cb13-191"></a></span>
+<span id="cb13-192"><a href="#cb13-192"></a>megahit <span class="sc">-</span><span class="dv">1</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz <span class="sc">-</span><span class="dv">2</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz <span class="sc">-</span>o <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span> <span class="sc">--</span>min<span class="sc">-</span>contig<span class="sc">-</span>len <span class="dv">1000</span> <span class="sc">--</span>presets meta<span class="sc">-</span>large <span class="sc">--</span>num<span class="sc">-</span>cpu<span class="sc">-</span>threads <span class="dv">32</span></span>
+<span id="cb13-193"><a href="#cb13-193"></a><span class="in">```</span></span>
+<span id="cb13-194"><a href="#cb13-194"></a></span>
+<span id="cb13-195"><a href="#cb13-195"></a>With the above settings, megahit recovered 31,331 contigs, total 44610184 bp, min 1000 bp, max 10674 bp, avg 1423 bp, N50 1391 bp. And this took about *10 hours*.</span>
+<span id="cb13-196"><a href="#cb13-196"></a></span>
+<span id="cb13-197"><a href="#cb13-197"></a>On the HPC, this was run on 1 node, 4 cores per node, and it used 18.5 GBs of memory.</span>
+<span id="cb13-198"><a href="#cb13-198"></a></span>
+<span id="cb13-199"><a href="#cb13-199"></a></span>
+<span id="cb13-200"><a href="#cb13-200"></a>Megahit assembly location: <span class="in">`/scratch/group/hu-lab/meta-eukomics/assembly/megahit-output/final.contigs.fa`</span></span>
+<span id="cb13-201"><a href="#cb13-201"></a></span>
+<span id="cb13-202"><a href="#cb13-202"></a></span>
+<span id="cb13-203"><a href="#cb13-203"></a>*_Optional_: Visualize your megahit assembly*</span>
+<span id="cb13-204"><a href="#cb13-204"></a></span>
+<span id="cb13-205"><a href="#cb13-205"></a>When megahit assembly is complete, use this option to visualize it: https://github.com/voutcn/megahit/wiki/Visualizing-MEGAHIT's-contig-graph</span>
+<span id="cb13-206"><a href="#cb13-206"></a></span>
+<span id="cb13-207"><a href="#cb13-207"></a></span>
+<span id="cb13-208"><a href="#cb13-208"></a><span class="fu">### IDBA-Tran</span></span>
+<span id="cb13-209"><a href="#cb13-209"></a></span>
+<span id="cb13-210"><a href="#cb13-210"></a><span class="co">[</span><span class="ot">IDBA-tran</span><span class="co">](https://i.cs.hku.hk/~alse/hkubrg/projects/idba_tran/index.html)</span> is another _de novo_ assembler. Uses local assembly to reconstruct missing kmers in low-expressed transcripts.</span>
+<span id="cb13-211"><a href="#cb13-211"></a></span>
+<span id="cb13-212"><a href="#cb13-212"></a>See script: <span class="in">`idba-assembly.slurm`</span> to run assembly with minimum kmer at 20 and max kmer at 50 with a 5 step increment of kmer.</span>
+<span id="cb13-215"><a href="#cb13-215"></a><span class="in">```{r}</span></span>
+<span id="cb13-216"><a href="#cb13-216"></a>echo <span class="st">"unzip files"</span></span>
+<span id="cb13-217"><a href="#cb13-217"></a>gunzip <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R<span class="sc">*</span>_trimmed.fastq.gz</span>
+<span id="cb13-218"><a href="#cb13-218"></a></span>
+<span id="cb13-219"><a href="#cb13-219"></a>module load GCC<span class="sc">/</span><span class="dv">8</span>.<span class="fl">2.0</span><span class="dv">-2</span>.<span class="fl">31.1</span> </span>
+<span id="cb13-220"><a href="#cb13-220"></a>module load IDBA<span class="sc">-</span>UD<span class="sc">/</span><span class="dv">1</span>.<span class="fl">1.3</span></span>
+<span id="cb13-221"><a href="#cb13-221"></a></span>
+<span id="cb13-222"><a href="#cb13-222"></a><span class="co"># Convert fastq R1 and R2 files into a single 'interleaved` fastq files</span></span>
+<span id="cb13-223"><a href="#cb13-223"></a>fq2fa <span class="sc">--</span>merge <span class="sc">--</span>filter <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>merged<span class="sc">-</span>PE<span class="sc">-</span><span class="cf">for</span><span class="sc">-</span>idba.fa</span>
+<span id="cb13-224"><a href="#cb13-224"></a></span>
+<span id="cb13-225"><a href="#cb13-225"></a><span class="co"># Run assembly</span></span>
+<span id="cb13-226"><a href="#cb13-226"></a>idba_tran <span class="sc">-</span>r <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>merged<span class="sc">-</span>PE<span class="sc">-</span><span class="cf">for</span><span class="sc">-</span>idba.fa <span class="sc">-</span>o <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>idba<span class="sc">-</span>out <span class="sc">--</span>mink <span class="dv">20</span> <span class="sc">--</span>maxk <span class="dv">50</span> <span class="sc">--</span>step <span class="dv">5</span> <span class="sc">--</span>num_threads <span class="dv">16</span></span>
+<span id="cb13-227"><a href="#cb13-227"></a></span>
+<span id="cb13-228"><a href="#cb13-228"></a><span class="co"># Make sure fastq files are re-zipped:</span></span>
+<span id="cb13-229"><a href="#cb13-229"></a>gzip <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq</span>
+<span id="cb13-230"><a href="#cb13-230"></a>gzip <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq</span>
+<span id="cb13-231"><a href="#cb13-231"></a><span class="in">```</span></span>
+<span id="cb13-232"><a href="#cb13-232"></a></span>
+<span id="cb13-233"><a href="#cb13-233"></a>Using 8 cores, the IDBA-tran assembly took about 23 hours and used 130 GB of memory.</span>
+<span id="cb13-234"><a href="#cb13-234"></a></span>
+<span id="cb13-235"><a href="#cb13-235"></a></span>
+<span id="cb13-236"><a href="#cb13-236"></a>The *IDBA-tran output* includes separation by k-mer length. So there are multiple "contig-X.fa" files. Where <span class="in">`contig-25.fa`</span> is the output contigs at k-mer = 25. The IDBA program determines which one is best and then puts this into the final <span class="in">`contig.fa`</span> file. </span>
+<span id="cb13-237"><a href="#cb13-237"></a>Output: <span class="in">`/scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa`</span></span>
+<span id="cb13-238"><a href="#cb13-238"></a></span>
+<span id="cb13-239"><a href="#cb13-239"></a><span class="fu">## 5. Evaluate assemblies</span></span>
+<span id="cb13-240"><a href="#cb13-240"></a></span>
+<span id="cb13-241"><a href="#cb13-241"></a><span class="fu">### QUAST</span></span>
+<span id="cb13-242"><a href="#cb13-242"></a></span>
+<span id="cb13-243"><a href="#cb13-243"></a>QUAST stands for _QUality ASsessment Tool_ and it is a tool for evaluating assemblies. Not all tools for evaluating assemblies will work, as most are built for metagenomics or require a reference genome. In this case, we do not have a reference genome. </span>
+<span id="cb13-244"><a href="#cb13-244"></a></span>
+<span id="cb13-245"><a href="#cb13-245"></a></span>
+<span id="cb13-246"><a href="#cb13-246"></a>*First for the IDBA output*:</span>
+<span id="cb13-247"><a href="#cb13-247"></a></span>
+<span id="cb13-250"><a href="#cb13-250"></a><span class="in">```{r}</span></span>
+<span id="cb13-251"><a href="#cb13-251"></a>module load GCC<span class="sc">/</span><span class="dv">9</span>.<span class="fl">3.0</span></span>
+<span id="cb13-252"><a href="#cb13-252"></a>module load OpenMPI<span class="sc">/</span><span class="dv">4</span>.<span class="fl">0.3</span></span>
+<span id="cb13-253"><a href="#cb13-253"></a>module load QUAST<span class="sc">/</span><span class="dv">5</span>.<span class="fl">0.2</span><span class="sc">-</span>Python<span class="dv">-3</span>.<span class="fl">8.2</span></span>
+<span id="cb13-254"><a href="#cb13-254"></a></span>
+<span id="cb13-255"><a href="#cb13-255"></a>quast.py <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>idba<span class="sc">-</span>out<span class="sc">/</span>contig.fa \</span>
+<span id="cb13-256"><a href="#cb13-256"></a>        <span class="sc">-</span><span class="dv">1</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz <span class="sc">-</span><span class="dv">2</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz \</span>
+<span id="cb13-257"><a href="#cb13-257"></a>        <span class="sc">-</span>o <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>idba<span class="sc">-</span>out<span class="sc">/</span> \</span>
+<span id="cb13-258"><a href="#cb13-258"></a>        <span class="sc">--</span>threads <span class="sc">$</span>SLURM_CPUS_PER_TASK</span>
+<span id="cb13-259"><a href="#cb13-259"></a><span class="in">```</span></span>
+<span id="cb13-260"><a href="#cb13-260"></a></span>
+<span id="cb13-261"><a href="#cb13-261"></a>This was run on 1 node with 16 cores. It used 3.5 GB of memory in about 1 hour. 6:15 CPUs used.</span>
+<span id="cb13-262"><a href="#cb13-262"></a></span>
+<span id="cb13-263"><a href="#cb13-263"></a></span>
+<span id="cb13-264"><a href="#cb13-264"></a></span>
+<span id="cb13-265"><a href="#cb13-265"></a>*Repeat for the megahit output*</span>
+<span id="cb13-266"><a href="#cb13-266"></a></span>
+<span id="cb13-269"><a href="#cb13-269"></a><span class="in">```{r}</span></span>
+<span id="cb13-270"><a href="#cb13-270"></a>module load GCC<span class="sc">/</span><span class="dv">9</span>.<span class="fl">3.0</span></span>
+<span id="cb13-271"><a href="#cb13-271"></a>module load OpenMPI<span class="sc">/</span><span class="dv">4</span>.<span class="fl">0.3</span></span>
+<span id="cb13-272"><a href="#cb13-272"></a>module load QUAST<span class="sc">/</span><span class="dv">5</span>.<span class="fl">0.2</span><span class="sc">-</span>Python<span class="dv">-3</span>.<span class="fl">8.2</span></span>
+<span id="cb13-273"><a href="#cb13-273"></a></span>
+<span id="cb13-274"><a href="#cb13-274"></a>quast.py <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>megahit<span class="sc">-</span>output<span class="sc">/</span>final.contigs.fa \</span>
+<span id="cb13-275"><a href="#cb13-275"></a>        <span class="sc">-</span><span class="dv">1</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R1_trimmed.fastq.gz <span class="sc">-</span><span class="dv">2</span> <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>raw<span class="sc">-</span>data<span class="sc">/</span>HS039_S90_L004_R2_trimmed.fastq.gz \</span>
+<span id="cb13-276"><a href="#cb13-276"></a>        <span class="sc">-</span>o <span class="sc">/</span>scratch<span class="sc">/</span>group<span class="sc">/</span>hu<span class="sc">-</span>lab<span class="sc">/</span>meta<span class="sc">-</span>eukomics<span class="sc">/</span>assembly<span class="sc">/</span>megahit<span class="sc">-</span>output<span class="sc">/</span> \</span>
+<span id="cb13-277"><a href="#cb13-277"></a>        <span class="sc">--</span>threads <span class="sc">$</span>SLURM_CPUS_PER_TASK</span>
+<span id="cb13-278"><a href="#cb13-278"></a><span class="in">```</span></span>
+<span id="cb13-279"><a href="#cb13-279"></a></span>
+<span id="cb13-280"><a href="#cb13-280"></a></span>
+<span id="cb13-281"><a href="#cb13-281"></a><span class="fu">#### Interpret QUAST </span></span>
+<span id="cb13-282"><a href="#cb13-282"></a></span>
+<span id="cb13-283"><a href="#cb13-283"></a>Download files locally from:</span>
+<span id="cb13-284"><a href="#cb13-284"></a></span>
+<span id="cb13-285"><a href="#cb13-285"></a><span class="ss">  * </span>PDF files: <span class="in">`meta-eukomics/assembly/*-out/basic_stats/*.pdf `</span></span>
+<span id="cb13-286"><a href="#cb13-286"></a><span class="ss">  * </span>Use an ICARUS html viewer: <span class="in">`meta-eukomics/assembly/*-out/icarus* `</span></span>
+<span id="cb13-287"><a href="#cb13-287"></a><span class="ss">  * </span>Basic read stats: <span class="in">`meta-eukomics/assembly/*-out/reads_stats/reads_report.tsv`</span></span>
+<span id="cb13-288"><a href="#cb13-288"></a></span>
+<span id="cb13-289"><a href="#cb13-289"></a></span>
+<span id="cb13-290"><a href="#cb13-290"></a>###</span>
+<span id="cb13-291"><a href="#cb13-291"></a></span>
+<span id="cb13-292"><a href="#cb13-292"></a></span>
+<span id="cb13-293"><a href="#cb13-293"></a></span>
+<span id="cb13-294"><a href="#cb13-294"></a></span>
+<span id="cb13-295"><a href="#cb13-295"></a><span class="fu">## Metatranscriptome run information</span></span>
+<span id="cb13-296"><a href="#cb13-296"></a></span>
+<span id="cb13-297"><a href="#cb13-297"></a>| Software    | Version |</span>
+<span id="cb13-298"><a href="#cb13-298"></a>|-------------|---------|</span>
+<span id="cb13-299"><a href="#cb13-299"></a>| Fastqc      | 0.11.9  |</span>
+<span id="cb13-300"><a href="#cb13-300"></a>| Trimmomatic | 0.39    |</span>
+<span id="cb13-301"><a href="#cb13-301"></a>| SortMeRNA   | 4.3.7   |</span>
+<span id="cb13-302"><a href="#cb13-302"></a>| megahit     | 1.2.9   |</span>
+<span id="cb13-303"><a href="#cb13-303"></a>| IDBA-Tran   | 1.1.3   |</span>
+<span id="cb13-304"><a href="#cb13-304"></a>| quast       | 5.0.2   |</span>
+<span id="cb13-305"><a href="#cb13-305"></a>|             |         |</span>
+<span id="cb13-306"><a href="#cb13-306"></a>|             |         |</span>
+<span id="cb13-307"><a href="#cb13-307"></a>|             |         |</span>
+<span id="cb13-308"><a href="#cb13-308"></a>|             |         |</span>
+<span id="cb13-309"><a href="#cb13-309"></a>|             |         |</span>
+<span id="cb13-310"><a href="#cb13-310"></a></span>
+<span id="cb13-311"><a href="#cb13-311"></a><span class="fu">#### Citations</span></span>
+<span id="cb13-312"><a href="#cb13-312"></a></span>
+<span id="cb13-313"><a href="#cb13-313"></a><span class="ss">* </span><span class="co">[</span><span class="ot">fastqc</span><span class="co">]</span></span>
+<span id="cb13-314"><a href="#cb13-314"></a></span>
+<span id="cb13-315"><a href="#cb13-315"></a><span class="ss">* </span><span class="co">[</span><span class="ot">trimmomatic</span><span class="co">]</span></span>
+<span id="cb13-316"><a href="#cb13-316"></a></span>
+<span id="cb13-317"><a href="#cb13-317"></a><span class="ss">* </span>SortMeRNA: Kopylova E., Noe L. and Touzet H., “SortMeRNA: Fast and accurate filtering of ribosomal RNAs in metatranscriptomic data”, Bioinformatics (2012), doi: 10.1093/bioinformatics/bts611.</span>
+<span id="cb13-318"><a href="#cb13-318"></a></span>
+<span id="cb13-319"><a href="#cb13-319"></a><span class="ss">* </span><span class="co">[</span><span class="ot">megahit</span><span class="co">]</span></span>
+<span id="cb13-320"><a href="#cb13-320"></a></span>
+<span id="cb13-321"><a href="#cb13-321"></a><span class="ss">* </span><span class="co">[</span><span class="ot">IDBA-Tran</span><span class="co">](https://academic.oup.com/bioinformatics/article/29/13/i326/191893)</span></span>
+<span id="cb13-322"><a href="#cb13-322"></a></span>
+<span id="cb13-323"><a href="#cb13-323"></a></span>
+<span id="cb13-324"><a href="#cb13-324"></a><span class="fu"># eukrhythmic</span></span>
+</code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 
