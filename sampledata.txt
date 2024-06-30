@@ -1,2 +1,2 @@
 SampleName	SampleID	AssemblyGroup	FastqFile
-intercal-metat	eukrhythmic-hu	group1	/scratch/group/hu-lab/meta-eukomics/raw-data/
+intercal-metat	eukrhythmic-hu	group1	/scratch/group/hu-lab/meta-eukomics/eukrhythmic-intercal/raw-data
