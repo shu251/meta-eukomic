@@ -1,0 +1,58 @@
+[
+  {
+    "objectID": "main.html",
+    "href": "main.html",
+    "title": "Meta-eukomic",
+    "section": "",
+    "text": "SKH last updated June 2024\nLocation for raw files: /scratch/group/hu-lab/meta-eukomics/raw-data Individual R1 and R2 files are 2.9 and 2.7 G, respectively.\n\n\n\nCohen NR, Alexander H, Krinos AI, Hu SK, Lampe RH. Marine Microeukaryote Metatranscriptomics: Sample Processing and Bioinformatic Workflow Recommendations for Ecological Applications. Frontiers in Marine Science 2022; 9.\nKrinos AI, Cohen NR, Follows MJ, Alexander H. Reverse engineering environmental metatranscriptomes clarifies best practices for eukaryotic assembly. BMC Bioinformatics 2023; 24: 74.\n\n\n\n\nHigh performace computer (HPC) hosted by my University. This is the TAMU HPRC"
+  },
+  {
+    "objectID": "main.html#background-reading",
+    "href": "main.html#background-reading",
+    "title": "Meta-eukomic",
+    "section": "",
+    "text": "Cohen NR, Alexander H, Krinos AI, Hu SK, Lampe RH. Marine Microeukaryote Metatranscriptomics: Sample Processing and Bioinformatic Workflow Recommendations for Ecological Applications. Frontiers in Marine Science 2022; 9.\nKrinos AI, Cohen NR, Follows MJ, Alexander H. Reverse engineering environmental metatranscriptomes clarifies best practices for eukaryotic assembly. BMC Bioinformatics 2023; 24: 74."
+  },
+  {
+    "objectID": "main.html#working-environment",
+    "href": "main.html#working-environment",
+    "title": "Meta-eukomic",
+    "section": "",
+    "text": "High performace computer (HPC) hosted by my University. This is the TAMU HPRC"
+  },
+  {
+    "objectID": "main.html#determine-assembly-groups",
+    "href": "main.html#determine-assembly-groups",
+    "title": "Meta-eukomic",
+    "section": "2.1 1. Determine assembly groups",
+    "text": "2.1 1. Determine assembly groups"
+  },
+  {
+    "objectID": "main.html#trim-qc",
+    "href": "main.html#trim-qc",
+    "title": "Meta-eukomic",
+    "section": "2.2 2. Trim & QC",
+    "text": "2.2 2. Trim & QC\nInitial Fastqc\nCode for slurm script run on the HPC to run fastqc (fastqc.slurm). For this set of samples, it took 10 minutes and used 290 MB. CPU used: 00:12:27.\nmodule load FastQC/0.11.9-Java-11\n\nfastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz\nfastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz\nIn order to look at the output .html files, they need to be opened locally.\nscp $HPRC-ADDRESS:/scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001_fastqc.html meta-eukomic/output-files/\nThen we need to trim the individual reads, removing any sequencing-based primers, etc. We can use the program, Trimmomatic for this. R1 reads are forward and R2 are reverse. The Trimmomatic software requires input reads and then output trimmed and unpaired reads (the latter of which are discarded). Another input file required is a list of the possible primers and adapters from sequencing, adapters-primers.fa.\nSlurm script, trim_fastqc.slurm. Below, trim parameter include:\n\nRemove adapters, found in adapters-primers.fa\nRemove leading low quality or N bases (below quality 3) (LEADING:3)\nRemove trailing low quality or N bases (below quality 3) (TRAILING:3)\nScan the read with a 4-base wide sliding window, cutting when the average quality per base drops below 10 (SLIDINGWINDOW:4:10)\nDrop reads shorter than 50 bases long (MINLEN:50)\n\nmodule load Trimmomatic/0.39-Java-11\n\njava -jar $EBROOTTRIMMOMATIC/trimmomatic-0.39.jar PE /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz  /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_unpaired.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_unpaired.fastq.gz ILLUMINACLIP:adapters-primers.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:10 MINLEN:50\n\n# \"$EBROOTTRIMMOMATIC/trimmomatic-0.39.jar\" note that this is specific to the HPRC system we are using\n\necho \"Trimmomtatic complete. Repeating fastqc\"\n\nmodule load FastQC/0.11.9-Java-11\n\nfastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz\nfastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz"
+  },
+  {
+    "objectID": "main.html#assembly",
+    "href": "main.html#assembly",
+    "title": "Meta-eukomic",
+    "section": "2.3 3. Assembly",
+    "text": "2.3 3. Assembly\nThe next step is to take all the sequenced reads and bring them together to make longer, more continuous sequences, called contigs. Here, we will use two assemblers and combine the results. Each one is built slightly differently.\n\nMEGAHIT (assembly 1)\nWe will first use megahit. To save the assemblies separately, make a new assembly output file in your working scratch space. mkdir /scratch/group/hu-lab/meta-eukomics/assembly\nThe megahit command below, outputs contigs in the new assembly directory, only keeps reads longer than 100 bps, and uses the megahit preset for lots of diversity in a sample (meta-large).\nMegahit uses multiple k-mer strategy, and we can set the min and max k. In order to reduce the complexity of the de Bruijin graph, a kmin size of 25 and higher (like 27) is better.\nSee slurm script: megahit-assembly.slurm\nmodule load GCCcore/11.2.0\nmodule load MEGAHIT/1.2.9\n\nmegahit -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz -o /scratch/group/hu-lab/meta-eukomics/assembly/ --min-contig-len 1000 --presets meta-large --num-cpu-threads 32\nWhen megahit assembly is complete, use this option to visualize it: https://github.com/voutcn/megahit/wiki/Visualizing-MEGAHIT’s-contig-graph\n\n\nIDBA-Tran\nIDBA-tran is another de novo assembler. Uses local assembly to reconstruct missing kmers in low-expressed transcripts.\nSee script: idba-assembly.slurm to run assembly with minimum kmer at 20 and max kmer at 50 with a 5 step increment of kmer.\nmodule load GCC/8.2.0-2.31.1 \nmodule load IDBA-UD/1.1.3\n\n# Convert fastq R1 and R2 files into a single 'interleaved` fastq files\nbin/fq2fa --merge --filter /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/assembly/merged-PE-for-idba.fa\n\n# Run assembly\nidba_tran -r /scratch/group/hu-lab/meta-eukomics/assembly/merged-PE-for-idba.fa -o /scratch/group/hu-lab/meta-eukomics/assembly/idba-out --mink 20 --maxk 50 --step 5 --num_threads 16"
+  },
+  {
+    "objectID": "main.html#section",
+    "href": "main.html#section",
+    "title": "Meta-eukomic",
+    "section": "2.4 4.",
+    "text": "2.4 4."
+  },
+  {
+    "objectID": "main.html#metatranscriptome-run-information",
+    "href": "main.html#metatranscriptome-run-information",
+    "title": "Meta-eukomic",
+    "section": "2.5 Metatranscriptome run information",
+    "text": "2.5 Metatranscriptome run information\n\n\n\nSoftware\nVersion\n\n\n\n\nFastqc\n0.11.9\n\n\nTrimmomatic\n0.39\n\n\nmegahit\n1.2.9\n\n\nIDBA-Tran\n1.1.3"
+  }
+]
