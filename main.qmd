@@ -127,7 +127,7 @@ mkdir rRNA_databases_v4
 tar -xvf database.tar.gz -C rRNA_databases_v4
 ```
 
-### Run SortMeRNA
+### Run SortMeRNA (_optional_)
 
 In your slurm script, activate conda, and then the sortmerna environment (`sortmeRNA.slurm`):
 ```{r}  
@@ -140,7 +140,7 @@ mkdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort
 sortmerna -ref /scratch/group/hu-lab/meta-eukomics/rRNA_databases_v4/smr_v4.3_sensitive_db.fasta \
 -reads /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz \
 -reads /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
--workdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort/
+-workdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort/ -aligned rRNA-aligned -other non-rRNA
 -fastx --paired_in --out2 --threads $SLURM_CPUS_PER_TASK
 ```
 
@@ -149,16 +149,17 @@ sortmerna -ref /scratch/group/hu-lab/meta-eukomics/rRNA_databases_v4/smr_v4.3_se
 Since the SortmeRNA tool is optimized to take things that are aligned with the rRNA databases and put them in a file called "aligned", then we need to use the `other.fasta` output file. The argument for this is `-out2`
 
 
-Necessary flags for retaining the non-rRNA aligned reads and outputting them as separate R1 and R2 files: `-fastx`, `--paired_in`, and `--out2`.
+Necessary flags for retaining the non-rRNA aligned reads and outputting them as separate R1 and R2 files: `-other`, `-fastx`, `--paired_in`, and `--out2`. To learn more about this check out this thread: _How do I properly run sortmerna?_ https://github.com/sortmerna/sortmerna/issues/333
+
+This was run with 32 threads and 1 node. It took 2 hours 45 minutes and used just over 16 GB of memory. 
 
 
-To learn more about this check out this thread: _How do I properly run sortmerna?_ https://github.com/sortmerna/sortmerna/issues/333
-
+> The total number of reads that aligned to the rRNA databases was pretty small. I am planning to not use the Sorted reads, as there are some issue with the program. Will look for another way to sort reads. 
 
 
 ## 4. Assembly
 
-The next step is to take all the sequenced reads and bring them together to make longer, more continuous sequences, called *contigs*. Here, we will use two assemblers and combine the results. Each one is built slightly differently.
+The next step is to take all the trimmed reads and bring them together to make longer, more continuous sequences, called *contigs*. Here, we will use two assemblers and combine the results. Each one is built slightly differently.
 
 ### MEGAHIT (assembly 1)
 
@@ -331,9 +332,67 @@ TransDecoder.Predict -t /scratch/group/hu-lab/meta-eukomics/assembly/combined-as
 At this point, if you have a LOT of samples and large amounts of data, a repeat clustering of the proteins will help reduce the amount of data you're working with. 
 
 
-## 8. Marferret 
+## 8. Key output files
+
+At this point, you have assembled, quality checked, and predicted proteins for all your metatranscriptomes. 
 
 
+* Assembled contigs: `/scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/clusterRes_rep_seq.fasta`
+
+* Predicted proteins: `/scratch/group/hu-lab/meta-eukomics/predictions`
+
+
+
+*Next steps*: annotate above files, based on predicted proteins or the contigs and determine transcript abundance by mapping the original trimmed fastq reads back onto these contigs. 
+
+
+
+## 9. Marferret 
+
+For taxonomic annotation, using [MarFERReT](https://github.com/armbrustlab/marferret)
+
+For this we will use Diamond (DIAMOND/2.0.15)
+
+To use the Marferrt resource, we need to run this with diamond.
+
+
+
+
+```{r}
+module load GCC/11.2.0
+module load DIAMOND/2.0.15
+
+diamond blastp --threads 8 --query $SAMPLE.faa --db $DIAMOND_CUSTOMDB --daa $SAMPLE.search_result
+
+```
+
+
+## 10. Transcript counts
+
+For determining "gene expression", we estimate this from the number of transcripts (sequenced reads) that map onto your assembled reads. We will use [salmon](https://combine-lab.github.io/salmon/#:~:text=Salmon%20is%20a%20tool%20for,and%20while%20using%20little%20memory.).
+
+
+First we need to index your transcripts - salmon uses a quasi-map approach to quantify the reads. 
+
+```{r}
+module load GCC/11.2.0
+module load OpenMPI/4.1.1
+module load Salmon/1.7.0
+
+mkdir /scratch/group/hu-lab/meta-eukomics/salmon-quant
+
+salmon index -t /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/clusterRes_rep_seq.fasta -i /scratch/group/hu-lab/meta-eukomics/salmon-quant/ -p $SLURM_CPUS_PER_TASK
+```
+
+
+```{r}
+salmon quant -i /scratch/group/hu-lab/meta-eukomics/salmon-quant/ -l A \
+         -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz \
+         -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
+         -p $SLURM_CPUS_PER_TASK --validateMappings -o /scratch/group/hu-lab/meta-eukomics/salmon-quant/quant
+```
+
+Read more here, especially on how to loop through samples: https://combine-lab.github.io/salmon/getting_started/#indexing-txome
 
 ## Metatranscriptome run information
 
@@ -345,10 +404,10 @@ At this point, if you have a LOT of samples and large amounts of data, a repeat 
 | megahit     | 1.2.9   |
 | IDBA-Tran   | 1.1.3   |
 | quast       | 5.0.2   |
-| mmseqs2     |         |
+| mmseqs2     | 13-45111|
 | TransDecoder| 5.5.0   |
-|             |         |
-|             |         |
+|  Salmon     |  1.7.0  |
+| Diamond     | 2.0.15  |
 |             |         |
 
 #### Citations
@@ -363,6 +422,7 @@ At this point, if you have a LOT of samples and large amounts of data, a repeat 
 
 * [IDBA-Tran](https://academic.oup.com/bioinformatics/article/29/13/i326/191893)
 
+* Salmon: Patro, R., Duggal, G., Love, M. I., Irizarry, R. A., & Kingsford, C. (2017). Salmon provides fast and bias-aware quantification of transcript expression. Nature Methods.
 
 # eukrhythmic
 
