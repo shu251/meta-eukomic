@@ -78,6 +78,8 @@ fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fa
 fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz
 ```
 
+> The above trimming steps took 615 MB of memory and 2 hours.
+
 ## 3. Remove ribosomal RNA
 
 [Sortmerna](https://sortmerna.readthedocs.io/en/latest/installation.html) installation guidelines and usage can be found here.
@@ -151,7 +153,7 @@ Since the SortmeRNA tool is optimized to take things that are aligned with the r
 
 Necessary flags for retaining the non-rRNA aligned reads and outputting them as separate R1 and R2 files: `-other`, `-fastx`, `--paired_in`, and `--out2`. To learn more about this check out this thread: _How do I properly run sortmerna?_ https://github.com/sortmerna/sortmerna/issues/333
 
-This was run with 32 threads and 1 node. It took 2 hours 45 minutes and used just over 16 GB of memory. 
+> This was run with 32 threads and 1 node. It took 2 hours 45 minutes and used just over 16 GB of memory. 
 
 
 > The total number of reads that aligned to the rRNA databases was pretty small. I am planning to not use the Sorted reads, as there are some issue with the program. Will look for another way to sort reads. 
@@ -178,9 +180,9 @@ module load MEGAHIT/1.2.9
 megahit -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz -o /scratch/group/hu-lab/meta-eukomics/assembly/ --min-contig-len 1000 --presets meta-large --num-cpu-threads 32
 ```
 
-With the above settings, megahit recovered 31,331 contigs, total 44610184 bp, min 1000 bp, max 10674 bp, avg 1423 bp, N50 1391 bp. And this took about *10 hours*.
+> With the above settings, megahit recovered 31,331 contigs, total 44610184 bp, min 1000 bp, max 10674 bp, avg 1423 bp, N50 1391 bp. And this took about *10 hours*.
 
-On the HPC, this was run on 1 node, 4 cores per node, and it used 18.5 GBs of memory.
+> On the HPC, this was run on 1 node, 4 cores per node, and it used 18.5 GBs of memory.
 
 
 Megahit assembly location: `/scratch/group/hu-lab/meta-eukomics/assembly/megahit-output/final.contigs.fa`
@@ -191,7 +193,7 @@ Megahit assembly location: `/scratch/group/hu-lab/meta-eukomics/assembly/megahit
 When megahit assembly is complete, use this option to visualize it: https://github.com/voutcn/megahit/wiki/Visualizing-MEGAHIT's-contig-graph
 
 
-### IDBA-Tran
+### IDBA-Tran (assembly 2)
 
 [IDBA-tran](https://i.cs.hku.hk/~alse/hkubrg/projects/idba_tran/index.html) is another _de novo_ assembler. Uses local assembly to reconstruct missing kmers in low-expressed transcripts.
 
@@ -214,7 +216,7 @@ gzip /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fast
 gzip /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq
 ```
 
-Using 8 cores, the IDBA-tran assembly took about 23 hours and used 130 GB of memory.
+> Using 8 cores, the IDBA-tran assembly took about 23 hours and used 130 GB of memory.
 
 
 The *IDBA-tran output* includes separation by k-mer length. So there are multiple "contig-X.fa" files. Where `contig-25.fa` is the output contigs at k-mer = 25. The IDBA program determines which one is best and then puts this into the final `contig.fa` file. 
@@ -240,7 +242,7 @@ quast.py /scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa \
         --threads $SLURM_CPUS_PER_TASK
 ```
 
-This was run on 1 node with 16 cores. It used 3.5 GB of memory in about 1 hour. 6:15 CPUs used.
+> This was run on 1 node with 16 cores. It used 3.5 GB of memory in about 1 hour. 6:15 CPUs used.
 
 
 
@@ -257,6 +259,7 @@ quast.py /scratch/group/hu-lab/meta-eukomics/assembly/megahit-output/final.conti
         --threads $SLURM_CPUS_PER_TASK
 ```
 
+> At 16 cores (1 node), this took about 1 hour at 3 GB of memory.
 
 #### Interpret QUAST 
 
@@ -298,6 +301,8 @@ mmseqs easy-linclust /scratch/group/hu-lab/meta-eukomics/assembly/combined-assem
 
 If you're working with a massive amount of data, this is a good place to try reducing the percent identity with mmseqs down to 99% or 98%. 
 
+> 32 cores (1 node), this took just under 1 hour and 1.3 GB of memory.
+
 ### 6.1 QUAST new combined assembly
 
 Repeat assembly evaluation with quast (`quast-combined.slurm`)
@@ -326,6 +331,11 @@ TransDecoder.LongOrfs -t /scratch/group/hu-lab/meta-eukomics/assembly/combined-a
 TransDecoder.Predict -t /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta --output_dir /scratch/group/hu-lab/meta-eukomics/predictions/
 ```
 
+Output files: `/scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta.transdecoder.*`
+
+> At 16 cores (1 node), job took 5.5 GB of memory and 1 hour.
+
+
 
 ### 7.1 (optional) MMSeq2 part II
 
@@ -339,38 +349,47 @@ At this point, you have assembled, quality checked, and predicted proteins for a
 
 * Assembled contigs: `/scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/clusterRes_rep_seq.fasta`
 
-* Predicted proteins: `/scratch/group/hu-lab/meta-eukomics/predictions`
+* Predicted proteins: `/scratch/group/hu-lab/meta-eukomics/predictions` see files ending in .gff3 and .pep
 
+* `/scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta.transdecoder.*`
 
 
 *Next steps*: annotate above files, based on predicted proteins or the contigs and determine transcript abundance by mapping the original trimmed fastq reads back onto these contigs. 
 
+## 9. Annotation
 
+The goal of the below steps is to match assembled reads with taxonomy and protein databases. 
 
-## 9. Marferret 
+### 9.1 Marferret & Diamond
 
 For taxonomic annotation, using [MarFERReT](https://github.com/armbrustlab/marferret)
 
-For this we will use Diamond (DIAMOND/2.0.15)
+For this we will use [Diamond](https://github.com/bbuchfink/diamond). This is a really fast tool for querying nucleotide or protein sequences again a database. You need to first make a diamond database (`.dmnd`), and then use `blastp` or something to 
 
-To use the Marferrt resource, we need to run this with diamond.
+To use the Marferrt resource, we need to query our combined assembly and predicted protein IDs with the Marferret this with diamond.
 
 
+In order to run Diamond (or any similar blast-like program), we need to consider a few variables & terms.
 
+* *e-value* (expectation value): This is the number of hits that could be found by chance. So an e-value of 50, means up to 50 of the matches (or hits) in your results could be a result of chance. Therefore, lower e-values mean you will get better matches, or matches of better quality. Generally, these programs may have e-value defaults of 10, which may be helpful for looking at all possible results. But an e-value of 0.01 would be better to use to look for good matches. There is a formula for how we calcuate e-values, and it depends on the size of the query sequences and the databases. 
+
+* *Bit score*: This is the result of a log2 scaled and normalized score of the number of matches that could be found by chance based on the database size. 
+
+Diamond default e-value is 0.001, I am changing mine to 0.0001. And I'm using the `--sensitive` setting which finds significant matches with >50 bits for fragments that are between 30-40 aa. 
 
 ```{r}
 module load GCC/11.2.0
 module load DIAMOND/2.0.15
 
-diamond blastp --threads 8 --query $SAMPLE.faa --db $DIAMOND_CUSTOMDB --daa $SAMPLE.search_result
-
+diamond blastp --threads $SLURM_CPUS_PER_TASK --query /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta.transdecoder.pep --db /scratch/group/hu-lab/marferret/data/MarFERReT.v1.1.1.dmnd -o /scratch/group/hu-lab/meta-eukomics/annotation/meta-eukomic_marferret_07082024.txt --sensitive --evalue 0.0001 --max-target-seqs 10 --outfmt 6 qseqid sseqid sallseqid evalue bitscore qlen slen
 ```
+
+> With 32 cores (1 node), this took 20 minutes and 10 GB of memory.
 
 
 ## 10. Transcript counts
 
 For determining "gene expression", we estimate this from the number of transcripts (sequenced reads) that map onto your assembled reads. We will use [salmon](https://combine-lab.github.io/salmon/#:~:text=Salmon%20is%20a%20tool%20for,and%20while%20using%20little%20memory.).
-
 
 First we need to index your transcripts - salmon uses a quasi-map approach to quantify the reads. 
 
@@ -384,6 +403,7 @@ mkdir /scratch/group/hu-lab/meta-eukomics/salmon-quant
 salmon index -t /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/clusterRes_rep_seq.fasta -i /scratch/group/hu-lab/meta-eukomics/salmon-quant/ -p $SLURM_CPUS_PER_TASK
 ```
 
+> Indexing this data took 45 minutes (32 cores, 1 node) and 1.2 GB of memory
 
 ```{r}
 salmon quant -i /scratch/group/hu-lab/meta-eukomics/salmon-quant/ -l A \
@@ -392,7 +412,34 @@ salmon quant -i /scratch/group/hu-lab/meta-eukomics/salmon-quant/ -l A \
          -p $SLURM_CPUS_PER_TASK --validateMappings -o /scratch/group/hu-lab/meta-eukomics/salmon-quant/quant
 ```
 
+> At 32 cores (1 node), transcript counts took 3.5 hours and 4.2 GB of memory.
+
 Read more here, especially on how to loop through samples: https://combine-lab.github.io/salmon/getting_started/#indexing-txome
+
+
+## 11. Compile outputs
+
+* Annotation from marferret: `/scratch/group/hu-lab/meta-eukomics/annotation/meta-eukomic_marferret_07082024.txt` 
+Column 1 is the contig ID name (qseqid) and the second ID is the match ID from the database (sseqid). These two columns need to be put into a new dataframe and called "TRANSCRIPTID" and "GENEID"
+
+* For the GENEIDs, the "mftXXXXXXXXX" names correspond to pfam IDs in:
+`/scratch/group/hu-lab/marferret/data/MarFERReT.v1.1.1.best_pfam_annotations.csv.gz`
+
+** Use `MarFERReT.v1.1.1.taxonomies.tab.gz` to get the *tax id* and then line this up with `MarFERReT.v1.1.1.metadata.csv` to get the actual taxonomy.
+
+### 11.1 Transcipt counts
+
+For obtaining transcript-level estimates from the salmon count files, we need to use the R library `tximport`. Review [the manual here](https://github.com/thelovelab/tximport?tab=readme-ov-file).
+
+Salmon output should be `/meta-eukomics/salmon-quant/quant/quant.sf`
+
+```{r}
+library(tximport)
+# txi <- tximport::tximport(files, type = "salmon", tx2gene = tx2gene_in)
+```
+
+
+
 
 ## Metatranscriptome run information
 
@@ -406,7 +453,7 @@ Read more here, especially on how to loop through samples: https://combine-lab.g
 | quast       | 5.0.2   |
 | mmseqs2     | 13-45111|
 | TransDecoder| 5.5.0   |
-|  Salmon     |  1.7.0  |
+| Salmon      |  1.7.0  |
 | Diamond     | 2.0.15  |
 |             |         |
 
