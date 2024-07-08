@@ -21,8 +21,6 @@ conda activate sortmerna_env
 mkdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort-2
 
 sortmerna -ref /scratch/group/hu-lab/meta-eukomics/rRNA_databases_v4/smr_v4.3_sensitive_db.fasta \
--ref /scratch/group/hu-lab/meta-eukomics/rRNA_databases_v4/smr_v4.3_default_db.fasta \
 -reads /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz \
 -reads /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
--workdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort-2/ -fastx -paired_in -out2 -threads $SLURM_CPUS_PER_TASK
-
+-workdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort/ -aligned rRNA_aligned -other non_rRNA -fastx --paired_in --out2 --threads $SLURM_CPUS_PER_TASK
