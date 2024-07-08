@@ -99,6 +99,7 @@ Search for sortmerna using conda:
 ```{r}  
 conda search sortmerna
 ```
+
 Create a conda environment specific for sortmerna, activate it, and install it.
 ```{r}  
 conda create --name sortmerna_env
@@ -111,8 +112,7 @@ Answer "yes" (*Y*) to installation questions. Now when you run SortMeRNA, you ne
 
 #### SortMeRNA databases
 
-Separately, you need to download the databases to "align" and check the sequences for ribosomal RNAs.
-
+Separately, you need to download the databases to "align" and check the sequences for ribosomal RNAs. See `sortmerna-db-build.slurm`.
 
 Instructions for [downloading version 4](https://sortmerna.readthedocs.io/en/latest/databases.html):
 ```{r}  
@@ -127,10 +127,9 @@ mkdir rRNA_databases_v4
 tar -xvf database.tar.gz -C rRNA_databases_v4
 ```
 
-### Run SortMeRNA
+### Run SortMeRNA (_optional_)
 
-
-In your slurm script, activate conda, and then the sortmerna environment:
+In your slurm script, activate conda, and then the sortmerna environment (`sortmeRNA.slurm`):
 ```{r}  
 # Load anaconda
 module load Anaconda3/2022.05
@@ -141,21 +140,26 @@ mkdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort
 sortmerna -ref /scratch/group/hu-lab/meta-eukomics/rRNA_databases_v4/smr_v4.3_sensitive_db.fasta \
 -reads /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz \
 -reads /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
--workdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort/
+-workdir /scratch/group/hu-lab/meta-eukomics/rRNA-sort/ -aligned rRNA-aligned -other non-rRNA
 -fastx --paired_in --out2 --threads $SLURM_CPUS_PER_TASK
 ```
 
-`paired_in`: The option ‘paired_in’ is optimal for users who want all reads in the other.fasta file to be non-rRNA. However, there are small chances that reads which are non-rRNA will also be put into the aligned.fasta file.
+`-paired_in`: The option ‘paired_in’ is optimal for users who want all reads in the other.fasta file to be non-rRNA. However, there are small chances that reads which are non-rRNA will also be put into the aligned.fasta file.
 
-Since the SortmeRNA tool is optimitized to take things that are aligned with the rRNA databases and put them in a file called "aligned", then we need to use the `other.fasta` output file. 
+Since the SortmeRNA tool is optimized to take things that are aligned with the rRNA databases and put them in a file called "aligned", then we need to use the `other.fasta` output file. The argument for this is `-out2`
 
-How do I properly run sortmerna? https://github.com/sortmerna/sortmerna/issues/333
 
+Necessary flags for retaining the non-rRNA aligned reads and outputting them as separate R1 and R2 files: `-other`, `-fastx`, `--paired_in`, and `--out2`. To learn more about this check out this thread: _How do I properly run sortmerna?_ https://github.com/sortmerna/sortmerna/issues/333
+
+This was run with 32 threads and 1 node. It took 2 hours 45 minutes and used just over 16 GB of memory. 
+
+
+> The total number of reads that aligned to the rRNA databases was pretty small. I am planning to not use the Sorted reads, as there are some issue with the program. Will look for another way to sort reads. 
 
 
 ## 4. Assembly
 
-The next step is to take all the sequenced reads and bring them together to make longer, more continuous sequences, called *contigs*. Here, we will use two assemblers and combine the results. Each one is built slightly differently.
+The next step is to take all the trimmed reads and bring them together to make longer, more continuous sequences, called *contigs*. Here, we will use two assemblers and combine the results. Each one is built slightly differently.
 
 ### MEGAHIT (assembly 1)
 
@@ -223,7 +227,7 @@ Output: `/scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa`
 QUAST stands for _QUality ASsessment Tool_ and it is a tool for evaluating assemblies. Not all tools for evaluating assemblies will work, as most are built for metagenomics or require a reference genome. In this case, we do not have a reference genome. 
 
 
-*First for the IDBA output*:
+*First for the IDBA output* `quast-idba.slurm`:
 
 ```{r}  
 module load GCC/9.3.0
@@ -240,7 +244,7 @@ This was run on 1 node with 16 cores. It used 3.5 GB of memory in about 1 hour. 
 
 
 
-*Repeat for the megahit output*
+*Repeat for the megahit output* `quast-megahit.slurm`:
 
 ```{r}  
 module load GCC/9.3.0
@@ -271,7 +275,7 @@ Because we have outputs from two separate assemblies, we can use a program to "c
 We will use [mmseqs2](https://github.com/soedinglab/MMseqs2) and try this at 99% similarity. MMseq stands for "Many-against-Many sequence searching"
 
 
-First, the output contig files from IDBA and Megahit are combined.
+First, the output contig files from IDBA and Megahit are combined: `cluster-mmseqs2.slurm`
 
 
 ```{r}  
@@ -292,26 +296,103 @@ mmseqs easy-linclust /scratch/group/hu-lab/meta-eukomics/assembly/combined-assem
 ```
 
 
+If you're working with a massive amount of data, this is a good place to try reducing the percent identity with mmseqs down to 99% or 98%. 
+
+### 6.1 QUAST new combined assembly
+
+Repeat assembly evaluation with quast (`quast-combined.slurm`)
+```{r}
+quast.py /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta \
+        -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
+        -o /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/ \
+        --threads $SLURM_CPUS_PER_TASK
+```
+
+
 ## 7. Transdecoder
+
+From the combined assemblies, we need to extract the long open reading frames (ORFs). ORFs will be identified that have at least 100 aminos acids. Then we also follow this with predicting the likely coding regions so we can continue with protein annotation.
+
+`transdecoder.slurm`:
 
 ```{r}
 module load GCC/11.3.0
 module load TransDecoder/5.5.0
 
 #extract the long open reading frames
-# TransDecoder.LongOrfs -t target_transcripts.fasta
+TransDecoder.LongOrfs -t /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta --output_dir /scratch/group/hu-lab/meta-eukomics/predictions/
 
 # predict the likely coding regions
-# TransDecoder.Predict -t target_transcripts.fasta [ homology options ]
+TransDecoder.Predict -t /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta --output_dir /scratch/group/hu-lab/meta-eukomics/predictions/
 ```
 
 
+### 7.1 (optional) MMSeq2 part II
 
-### 7.1 QUAST new combined assembly
-
-## 8. Marferret 
+At this point, if you have a LOT of samples and large amounts of data, a repeat clustering of the proteins will help reduce the amount of data you're working with. 
 
 
+## 8. Key output files
+
+At this point, you have assembled, quality checked, and predicted proteins for all your metatranscriptomes. 
+
+
+* Assembled contigs: `/scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/clusterRes_rep_seq.fasta`
+
+* Predicted proteins: `/scratch/group/hu-lab/meta-eukomics/predictions`
+
+
+
+*Next steps*: annotate above files, based on predicted proteins or the contigs and determine transcript abundance by mapping the original trimmed fastq reads back onto these contigs. 
+
+
+
+## 9. Marferret 
+
+For taxonomic annotation, using [MarFERReT](https://github.com/armbrustlab/marferret)
+
+For this we will use Diamond (DIAMOND/2.0.15)
+
+To use the Marferrt resource, we need to run this with diamond.
+
+
+
+
+```{r}
+module load GCC/11.2.0
+module load DIAMOND/2.0.15
+
+diamond blastp --threads 8 --query $SAMPLE.faa --db $DIAMOND_CUSTOMDB --daa $SAMPLE.search_result
+
+```
+
+
+## 10. Transcript counts
+
+For determining "gene expression", we estimate this from the number of transcripts (sequenced reads) that map onto your assembled reads. We will use [salmon](https://combine-lab.github.io/salmon/#:~:text=Salmon%20is%20a%20tool%20for,and%20while%20using%20little%20memory.).
+
+
+First we need to index your transcripts - salmon uses a quasi-map approach to quantify the reads. 
+
+```{r}
+module load GCC/11.2.0
+module load OpenMPI/4.1.1
+module load Salmon/1.7.0
+
+mkdir /scratch/group/hu-lab/meta-eukomics/salmon-quant
+
+salmon index -t /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/clusterRes_rep_seq.fasta -i /scratch/group/hu-lab/meta-eukomics/salmon-quant/ -p $SLURM_CPUS_PER_TASK
+```
+
+
+```{r}
+salmon quant -i /scratch/group/hu-lab/meta-eukomics/salmon-quant/ -l A \
+         -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz \
+         -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
+         -p $SLURM_CPUS_PER_TASK --validateMappings -o /scratch/group/hu-lab/meta-eukomics/salmon-quant/quant
+```
+
+Read more here, especially on how to loop through samples: https://combine-lab.github.io/salmon/getting_started/#indexing-txome
 
 ## Metatranscriptome run information
 
@@ -323,10 +404,10 @@ module load TransDecoder/5.5.0
 | megahit     | 1.2.9   |
 | IDBA-Tran   | 1.1.3   |
 | quast       | 5.0.2   |
-| mmseqs2     |         |
-| TransDecoder|5.5.0    |
-|             |         |
-|             |         |
+| mmseqs2     | 13-45111|
+| TransDecoder| 5.5.0   |
+|  Salmon     |  1.7.0  |
+| Diamond     | 2.0.15  |
 |             |         |
 
 #### Citations
@@ -341,6 +422,7 @@ module load TransDecoder/5.5.0
 
 * [IDBA-Tran](https://academic.oup.com/bioinformatics/article/29/13/i326/191893)
 
+* Salmon: Patro, R., Duggal, G., Love, M. I., Irizarry, R. A., & Kingsford, C. (2017). Salmon provides fast and bias-aware quantification of transcript expression. Nature Methods.
 
 # eukrhythmic
 
