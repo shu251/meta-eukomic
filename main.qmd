@@ -427,6 +427,10 @@ Column 1 is the contig ID name (qseqid) and the second ID is the match ID from t
 
 ** Use `MarFERReT.v1.1.1.taxonomies.tab.gz` to get the *tax id* and then line this up with `MarFERReT.v1.1.1.metadata.csv` to get the actual taxonomy.
 
+
+See `scripts/compile-metat-results.R`.
+
+
 ### 11.1 Transcipt counts
 
 For obtaining transcript-level estimates from the salmon count files, we need to use the R library `tximport`. Review [the manual here](https://github.com/thelovelab/tximport?tab=readme-ov-file).
