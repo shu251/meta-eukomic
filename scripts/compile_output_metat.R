@@ -38,3 +38,5 @@ metat_annot_info <- annot_marf %>%
 
 # Save all annotation information
 glimpse(metat_annot_info)
+
+save(metat_annot_info, file = "/scratch/group/hu-lab/meta-eukomics/annotation/metat_annot_info.RData")
