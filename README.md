@@ -14,3 +14,16 @@ Project updated as progress is made towards eukaryote-specific intercalibration 
 
 
 ## To do 
+
+1. Determine TPM
+
+2. Include kegg ID
+
+3. Make data table that looks like this:
+col 1: "transcript_name"
+col 2: "division"
+col 3: "class"
+col 4: KEGG
+col 5: Sample_1_TPM
+
+4. Create some basic visuals.
