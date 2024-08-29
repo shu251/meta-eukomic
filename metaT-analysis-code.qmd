@@ -1,0 +1,33 @@
+---
+title: "Metat analysis"
+format: html
+editor: visual
+---
+
+## Set up
+```{r}
+library(tidyverse)
+```
+```{r}
+load("/scratch/group/hu-lab/meta-eukomics/counts_metat_df_annot.RData", verbose = TRUE)
+glimpse(counts_metat_df_annot)
+```
+ Out of 9 million rows, we can figure out how to decrease the bulk in this file and get the size down. 
+ 
+```{r}
+hack_df <- counts_metat_df_annot %>% 
+  select(transcript_name = sseqid, Sample_TPM_Hu = HS039_S90, marferret_name, pr2_taxonomy, pfam_name, pfam_id)
+```
+
+```{r}
+head(hack_df)
+```
+```{r}
+hack_df_dedup <- hack_df %>% 
+  distinct()
+head(hack_df_dedup)  
+```
+```{r}
+write_delim(hack_df_dedup, file = "Output_dataframe_forhackathon_Hu.txt")
+```
+ 
