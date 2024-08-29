@@ -1,6 +1,6 @@
 # Metatranscriptome tutorial
 
-_July 2024_
+_August 2024_
 
 Site: https://shu251.github.io/meta-eukomic/
 
@@ -15,7 +15,7 @@ Project updated as progress is made towards eukaryote-specific intercalibration 
 
 ## To do 
 
-1. Determine TPM
+1. Determine TPM (see frenemies work)
 
 2. Include kegg ID
 
