@@ -29,9 +29,7 @@ High performance computer (HPC) hosted by my University. This is the TAMU HPRC.
 
 ## 1. Determine assembly groups
 
-When we have more than one sample, it is best to "group" samples for the assembly steps. Often this takes a few attempts and is a balance of an ideal plan vs. how much computational power you may have. 
-
-
+When we have more than one sample, it is best to "group" samples for the assembly steps. Often this takes a few attempts and is a balance of an ideal plan vs. how much computational power you may have.
 
 ## 2. Trim & QC
 
@@ -39,8 +37,8 @@ When we have more than one sample, it is best to "group" samples for the assembl
 
 Code for slurm script run on the HPC to run fastqc (`fastqc.slurm`). For this set of samples, it took 10 minutes and used 290 MB. CPU used: 00:12:27.
 
-```{r}
-module load FastQC/0.11.9-Java-11
+```
+# module load FastQC/0.11.9-Java-11
 
 fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz
 fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz
@@ -48,7 +46,7 @@ fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.
 
 In order to look at the output `.html` files, they need to be opened locally.
 
-```{r}
+```
 scp $HPRC-ADDRESS:/scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001_fastqc.html meta-eukomic/output-files/
 ```
 
@@ -66,7 +64,7 @@ Slurm script, `trim_fastqc.slurm`. Below, trim parameter include:
 
 -   Drop reads shorter than 50 bases long (MINLEN:50)
 
-```{r}
+```
 module load Trimmomatic/0.39-Java-11
 
 java -jar $EBROOTTRIMMOMATIC/trimmomatic-0.39.jar PE /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_001.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_001.fastq.gz  /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_unpaired.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_unpaired.fastq.gz ILLUMINACLIP:adapters-primers.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:10 MINLEN:50
@@ -89,7 +87,7 @@ fastqc /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fa
 
 On the TAMU HPRC, this is where we needed to make a conda environment to run this.
 
-```{r}
+```
 # Load anaconda
 module load Anaconda3/2022.05
 
@@ -102,13 +100,13 @@ conda config --set channel_priority strict
 
 Search for sortmerna using conda:
 
-```{r}
+```
 conda search sortmerna
 ```
 
 Create a conda environment specific for sortmerna, activate it, and install it.
 
-```{r}
+```
 conda create --name sortmerna_env
 conda activate sortmerna_env
 conda install sortmerna
@@ -122,7 +120,7 @@ Separately, you need to download the databases to "align" and check the sequence
 
 Instructions for [downloading version 4](https://sortmerna.readthedocs.io/en/latest/databases.html):
 
-```{r}
+```
 # Move to the location you want your rRNA databases stored
 cd /scratch/group/hu-lab/meta-eukomics/ 
 
@@ -138,7 +136,7 @@ tar -xvf database.tar.gz -C rRNA_databases_v4
 
 In your slurm script, activate conda, and then the sortmerna environment (`sortmeRNA.slurm`):
 
-```{r}
+```
 # Load anaconda
 module load Anaconda3/2022.05
 conda activate sortmerna_env
@@ -176,7 +174,7 @@ Megahit uses multiple k-mer strategy, and we can set the min and max k. In order
 
 See slurm script: `megahit-assembly.slurm`
 
-```{r}
+```
 module load GCCcore/11.2.0
 module load MEGAHIT/1.2.9
 
@@ -199,7 +197,7 @@ When megahit assembly is complete, use this option to visualize it: https://gith
 
 See script: `idba-assembly.slurm` to run assembly with minimum kmer at 20 and max kmer at 50 with a 5 step increment of kmer.
 
-```{r}
+```
 echo "unzip files"
 gunzip /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R*_trimmed.fastq.gz
 
@@ -229,7 +227,7 @@ QUAST stands for *QUality ASsessment Tool* and it is a tool for evaluating assem
 
 *First for the IDBA output* `quast-idba.slurm`:
 
-```{r}
+```
 module load GCC/9.3.0
 module load OpenMPI/4.0.3
 module load QUAST/5.0.2-Python-3.8.2
@@ -244,7 +242,7 @@ quast.py /scratch/group/hu-lab/meta-eukomics/assembly/idba-out/contig.fa \
 
 *Repeat for the megahit output* `quast-megahit.slurm`:
 
-```{r}
+```
 module load GCC/9.3.0
 module load OpenMPI/4.0.3
 module load QUAST/5.0.2-Python-3.8.2
@@ -267,8 +265,9 @@ Download files locally from:
 
 ##### Example output from QUAST
 
-_idba output_
-```
+*idba output*
+
+```         
 Assembly                    contig   
 # contigs (>= 0 bp)         892652   
 # contigs (>= 1000 bp)      13948    
@@ -300,8 +299,9 @@ Coverage >= 1x (%)          99.98
 # N's per 100 kbp           0.00     
 ```
 
-_megahit output_
-```
+*megahit output*
+
+```         
 Assembly                    final.contigs
 # contigs (>= 0 bp)         31331        
 # contigs (>= 1000 bp)      31331        
@@ -331,16 +331,15 @@ Properly paired (%)         18.5
 Avg. coverage depth         47           
 Coverage >= 1x (%)          99.98        
 # N's per 100 kbp           0.00         
-
 ```
 
 Notes on comparison:
 
-IDBA output a lot more contigs, but they are shorter. Megahit has many fewer (31,331 / 105,801) of the total contigs. However, contigs over 1000 bps from IDBA drops to only 13K. Demonstrating that most of them are between 500 - 1000 bps (because the program only reports contigs greater than 500 bps). Megahit, on the otherhand, has over 31k contigs that are greater than 1000 bps in length. For super long contigs, we get 27 from megahit and only 16 from idba (>5K bps).
+IDBA output a lot more contigs, but they are shorter. Megahit has many fewer (31,331 / 105,801) of the total contigs. However, contigs over 1000 bps from IDBA drops to only 13K. Demonstrating that most of them are between 500 - 1000 bps (because the program only reports contigs greater than 500 bps). Megahit, on the otherhand, has over 31k contigs that are greater than 1000 bps in length. For super long contigs, we get 27 from megahit and only 16 from idba (\>5K bps).
 
 As a result, we do get more of the original transcripts mapping to the IDBA output. but the average coverage is 27. Megahit has a few points fewer for % mapped, but the average coverage depth is 47.
 
-These assemblies can be combined below. 
+These assemblies can be combined below.
 
 ## 6. Cluster assembly output (mmseqs2)
 
@@ -350,7 +349,7 @@ We will use [mmseqs2](https://github.com/soedinglab/MMseqs2) and try this at 99%
 
 First, the output contig files from IDBA and Megahit are combined: `cluster-mmseqs2.slurm`
 
-```{r}
+```
 # Precursor load to use MMseqs2 on HPRC
 module load GCC/10.2.0
 module load OpenMPI/4.0.5
@@ -375,14 +374,14 @@ If you're working with a massive amount of data, this is a good place to try red
 
 Repeat assembly evaluation with quast (`quast-combined.slurm`)
 
-```{r}
+```
 quast.py /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/combined-assemblies.fasta \
         -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
         -o /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/ \
         --threads $SLURM_CPUS_PER_TASK
 ```
 
-Now, with a combined assembly we get a better deal with our contigs. We have more like 137,132 contigs. This is more than both IDBA and megahit, but we are now getting more than 45K greater than 1000 bp, and 43 greater than 5K bps. And now, the percent mapped from original reads is higher at 31%, but our average coverage depth drops to 21. This is fine because we can map more reads to our assemblies. 
+Now, with a combined assembly we get a better deal with our contigs. We have more like 137,132 contigs. This is more than both IDBA and megahit, but we are now getting more than 45K greater than 1000 bp, and 43 greater than 5K bps. And now, the percent mapped from original reads is higher at 31%, but our average coverage depth drops to 21. This is fine because we can map more reads to our assemblies.
 
 ## 7. Transdecoder
 
@@ -390,7 +389,7 @@ From the combined assemblies, we need to extract the long open reading frames (O
 
 `transdecoder.slurm`:
 
-```{r}
+```
 module load GCC/11.3.0
 module load TransDecoder/5.5.0
 
@@ -441,7 +440,7 @@ In order to run Diamond (or any similar blast-like program), we need to consider
 
 Diamond default e-value is 0.001, I am changing mine to 0.0001. And I'm using the `--sensitive` setting which finds significant matches with \>50 bits for fragments that are between 30-40 aa.
 
-```{r}
+```
 module load GCC/11.2.0
 module load DIAMOND/2.0.15
 
@@ -456,7 +455,7 @@ For determining "gene expression", we estimate this from the number of transcrip
 
 First we need to index your transcripts - salmon uses a quasi-map approach to quantify the reads.
 
-```{r}
+```
 module load GCC/11.2.0
 module load OpenMPI/4.1.1
 module load Salmon/1.7.0
@@ -468,7 +467,7 @@ salmon index -t /scratch/group/hu-lab/meta-eukomics/assembly/combined-assembly/c
 
 > Indexing this data took 45 minutes (32 cores, 1 node) and 1.2 GB of memory
 
-```{r}
+```
 salmon quant -i /scratch/group/hu-lab/meta-eukomics/salmon-quant/ -l A \
          -1 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R1_trimmed.fastq.gz \
          -2 /scratch/group/hu-lab/meta-eukomics/raw-data/HS039_S90_L004_R2_trimmed.fastq.gz \
@@ -487,7 +486,7 @@ Read more here, especially on how to loop through samples: https://combine-lab.g
 
 \*\* Use `MarFERReT.v1.1.1.taxonomies.tab.gz` to get the *tax id* and then line this up with `MarFERReT.v1.1.1.metadata.csv` to get the actual taxonomy.
 
-See `scripts/compile-metat-results.R`. This script will output an R object called `tx_gene_KEY`. 
+See `scripts/compile-metat-results.R`. This script will output an R object called `tx_gene_KEY`.
 
 ### 11.1 Transcipt counts
 
@@ -497,11 +496,11 @@ Salmon output should be `/meta-eukomics/salmon-quant/quant/quant.sf`
 
 From the `compile-metat-results.R` code, you can import this `tx_gene_KEY` object to use in the `tximport` estimation of TPMs. First, you need to run the command `tximport`.
 
-This should output a *txi* object called `txi_metat` and then you can create a paired sample table. 
+This should output a *txi* object called `txi_metat` and then you can create a paired sample table.
 
 See the Rscript `scripts/tximport_run.R`
 
-```{r}
+```
 ## Example:
 # library(tximport)
 # txi <- tximport::tximport(files, type = "salmon", tx2gene = tx2gene_in)
@@ -509,15 +508,13 @@ See the Rscript `scripts/tximport_run.R`
 
 ### 11.2 Get TPMs & Annotation information
 
-See `scripts/format-output-tables.R`. This takes the txi objects and uses the command `makeCountsFromAbundance()` to generate a TPM file that represents the transcript-length corrected estimates. 
-
+See `scripts/format-output-tables.R`. This takes the txi objects and uses the command `makeCountsFromAbundance()` to generate a TPM file that represents the transcript-length corrected estimates.
 
 Then the script imports the annotation file, merges it with the count information to create a large R object with TPMs and annotation information.
 
-
 ### 11.3 Reformat for hackathon!
 
-```{r}
+```
 load("/scratch/group/hu-lab/meta-eukomics/counts_metat_df_annot.RData", verbose = TRUE)
 glimpse(counts_metat_df_annot)
 ```
@@ -552,8 +549,7 @@ glimpse(counts_metat_df_annot)
 
 -   Salmon: Patro, R., Duggal, G., Love, M. I., Irizarry, R. A., & Kingsford, C. (2017). Salmon provides fast and bias-aware quantification of transcript expression. Nature Methods.
 
-- QUAST: Gurevich A, Saveliev V, Vyahhi N, Tesler G. QUAST: quality assessment tool for genome assemblies. Bioinformatics. 2013;29: 1072 1075. doi:10.1093/bioinformatics/btt086 , https://www.ncbi.nlm.nih.gov/pubmed/23422339
-
+-   QUAST: Gurevich A, Saveliev V, Vyahhi N, Tesler G. QUAST: quality assessment tool for genome assemblies. Bioinformatics. 2013;29: 1072 1075. doi:10.1093/bioinformatics/btt086 , https://www.ncbi.nlm.nih.gov/pubmed/23422339
 
 # eukrhythmic
 
@@ -588,5 +584,5 @@ mamba install -c conda-forge -c bioconda snakemake
 
 To run eukrhythmic, activate the environment: `conda activate eukrhythmic`.
 
-```{r}
+```
 ```
