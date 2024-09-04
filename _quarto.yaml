@@ -3,6 +3,7 @@ project:
   output-dir: docs
   render:
     - main.qmd
+    - metaT-analysis-code.qmd
 
 website:
   title: "Meta-eukomic"
@@ -10,6 +11,8 @@ website:
     left:
       - href: main.qmd
         text: Main
+      - href: metaT-analysis-code.qmd
+        text: Analysis
         
 execute:
   eval: false
