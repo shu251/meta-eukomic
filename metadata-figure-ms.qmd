@@ -1,0 +1,846 @@
+---
+title: "Metadata compilation"
+editor: visual
+---
+
+# R set up
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(janitor)
+library(scales)
+library(patchwork)
+```
+
+
+Import version 3 cleaned
+```{r}
+# md <- read.csv("RNAExtractions_Metadata_V1.csv")
+# md <- read.csv("RNAExtractions_Metadata_V1 - june222026.csv")
+md_clean <- read.csv("RNAExtractions_Metadata_V1_cleaned.csv") |> 
+  mutate(sequencing_facility_raw = case_when(
+    sequence_id == "HS032" ~ "Columbia Genome Center",
+    sequence_id == "HS033" ~ "Columbia Genome Center",
+    sequence_id == "HS034" ~ "Columbia Genome Center",
+    sequence_id == "HS035" ~ "Columbia Genome Center",
+    sequence_id == "HS036" ~ "Columbia Genome Center",
+    sequence_id == "HS037" ~ "Columbia Genome Center",
+    sequence_id == "HS038" ~ "Columbia Genome Center",
+    sequence_id == "HS039" ~ "Columbia Genome Center",
+    sequence_id == "HS040" ~ "Columbia Genome Center",
+    sequence_id == "HS041" ~ "Columbia Genome Center",
+    sequence_id == "HS042" ~ "Columbia Genome Center",
+    sequence_id == "HS043" ~ "Columbia Genome Center",
+    sequence_id == "HS044" ~ "Columbia Genome Center",
+    sequence_id == "HS045" ~ "Columbia Genome Center",
+    sequence_id == "HS046" ~ "Columbia Genome Center",
+    sequence_id == "HS047" ~ "Columbia Genome Center",
+    sequence_id == "HS048" ~ "Columbia Genome Center",
+    sequence_id == "HS049" ~ "Columbia Genome Center",
+    sequence_id == "HS050" ~ "Columbia Genome Center",
+    sequence_id == "HS051" ~ "UGA",
+    sequence_id == "HS052" ~ "UCSD",
+    sequence_id == "HS053" ~ "UCSD",
+    sequence_id == "HS054" ~ "UCSD",
+    sequence_id == "HS055" ~ "UCSD",
+    sequence_id == "HS056" ~ "UCSD",
+    sequence_id == "HS057" ~ "Genewiz",
+    sequence_id == "HS058" ~ "Genewiz",
+    sequence_id == "HS059" ~ "Northwest Genomics Center",
+    sequence_id == "HS060" ~ "Northwest Genomics Center",
+    sequence_id == "HS061" ~ "UGA"
+  ))
+glimpse(md_clean)
+
+
+```
+
+## Clean up dataframes
+
+Revise input data for consistency.
+
+```{r}
+colnames(md_clean)
+(unique(md_clean$sequence_id))
+(unique(md_clean$sequencing_facility_raw))
+(unique(md_clean$sequencing_machine))
+(unique(md_clean$library_prep_type))
+# unique(md_clean$extraction_protocol)
+library_prep_type, sequencing_facility_raw, sequencing_machine
+```
+
+```{r}
+df_to_plot <- md_clean |>
+  # Add depth, use filter
+  mutate(depth = case_when(
+    (filter == "A" | filter == "B") ~ "30 m",
+    TRUE ~ "35 m"
+  )) |> 
+  ##
+  mutate(
+    #
+    lysis_reagent = str_replace_all(lysis_reagent, "none", "Unknown_lysis"),
+    #
+    physical_disruption_method = str_replace_na(physical_disruption_method, "Unknown_disrupt"),
+    physical_disruption_method = str_replace_all(physical_disruption_method, "Vortex with beads", "Vortex,Beads"),
+    # bead beat minutes
+    bead_beat_time_min = as.numeric(bead_beat_time_min),
+    # lysis temperature
+    lysis_temp_c = as.numeric(lysis_temp_c),
+    # time bead/temp lyse
+    lysis_incubation_time_min = as.numeric(lysis_incubation_time_min),
+    # extraction
+    #
+    # dnase
+    dnase_brand_clean = case_when(
+      grepl("Kit-provided", dnase_brand_clean) ~ "Kit-provided",
+      dnase_brand_clean == "Qiagen + Turbo DNase"~ "Qiagen RNase-free DNase,Turbo DNase",
+      is.na(dnase_brand_clean) ~ "Unknown_dnase",
+      TRUE ~ dnase_brand_clean
+    ),
+    # elution
+    #
+    # quantification
+    #
+    # PolyA tail selection
+    
+    # Sequencing method
+    
+    # Sequencing facility
+    
+    ) |> 
+  select(sequence_id, filter, depth, 
+         lysis_reagent, physical_disruption_method,
+         bead_beat_time_min, lysis_temp_c, lysis_incubation_time_min, #numerics
+         extraction_protocol, dnase_brand_clean, 
+         elution_solution, quantification_method,
+         library_prep_type, sequencing_facility_raw, sequencing_machine) |> 
+  pivot_longer(cols = -c(sequence_id, filter, depth, bead_beat_time_min, lysis_temp_c, lysis_incubation_time_min), names_to = "CATEGORY_0", values_to = "CATEGORY_1") |>
+  add_column(VALUE = TRUE) |> 
+  # pivot_longer(cols = -c(sequence_id, filter, depth), names_to = "CATEGORY", values_to = "VALUE") |> 
+  separate_longer_delim(CATEGORY_1, delim = ",") |>
+  select(-CATEGORY_0) |> 
+  pivot_wider(names_from = CATEGORY_1, values_from = VALUE, values_fill = FALSE) #|>
+  # separate_longer_delim(physical_disruption_method, delim = ",") #|> head()
+```
+
+```{r}
+metadata_factor <- c("beta-mercaptoethanol", "TCEP", "Unknown_lysis",
+                     "Beads", "Vortex", "Unknown_disrupt")
+metadata_naming <- c("β-mercaptoethanol", "+TCEP", "Unknown lysis",
+                     "Beads", "Vortex", "Unknown disrupt")
+
+variable_fill <- list(
+  "Filter" = "filter",
+  "Depth" = "depth",
+  
+  "β-mercaptoethanol" = "beta-mercaptoethanol",
+  "+TCEP" = "TCEP",
+  "Unknown lysis buffer" = "Unknown_lysis",
+  
+  "Beads" = "Beads", 
+  "Vortex" = "Vortex", 
+  "Unknown method" = "Unknown_disrupt",
+  
+  "Bead beat (min)" ="bead_beat_time_min",
+  "Lysis incubation (min)" ="lysis_incubation_time_min",
+  "Lysis temp °C" = "lysis_temp_c",
+  
+  "NucleoMag RNA" = "NucleoMag RNA",
+  "NucleoSpin RNA" = "NucleoSpin RNA",
+  "Qiagen AllPrep RNA/DNA" = "Qiagen AllPrep RNA/DNA",
+  "Qiagen PowerWater RNA" = "Qiagen PowerWater RNA",
+  "Qiagen RNeasy" = "Qiagen RNeasy",
+  "Qiagen RNeasy Plant Mini Kit" = "Qiagen RNeasy Plant Mini Kit",
+  "RNAqueous-4PCR Total RNA Isolation" = "RNAqueous-4PCR Total RNA Isolation",
+  "Thermo Fisher Trizol" = "Thermo Fisher Trizol",
+  "Zymo Quick DNA/RNA miniprep kit" = "Zymo Quick DNA/RNA miniprep kit",
+  "Zymo RNA MiniPrep Plus" = "Zymo RNA MiniPrep Plus",
+  "Zymo RNA Quick" = "Zymo RNA Quick",
+
+  "Kit-provided" = "Kit-provided",
+  "Qiagen RNase-free DNase" = "Qiagen RNase-free DNase",
+  "Turbo DNase" = "Turbo DNase",
+  "Unknown_dnase" = "Unknown_dnase",
+  
+  "RNase-free water" = "RNase-free water",
+  "Kit elution solution" = "Elution solution",
+  
+  "Bioanalyzer" = "Bioanalyzer",
+  "Qubit" = "Qubit",
+  "RiboGreen" = "RiboGreen",
+  "Nanodrop" = "Nanodrop",
+  
+  "PolyA" = "PolyA",
+  "rRNA depletion" = "rRNA depletion",
+  
+  "Illumina NovaSeq 6000" = "Illumina NovaSeq 6000",
+  "Illumina NextSeq 2000 Flow Cell P2" = "Illumina NextSeq 2000 Flow Cell P2",
+  "Illumina NovaSeq S4" = "Illumina NovaSeq S4",
+  "Illumina HiSeq 4000" = "Illumina HiSeq 4000",
+  "Illumina NovaSeq S2" = "Illumina NovaSeq S2",
+  "NovaSeq X (PE150)" = "NovaSeq X (PE150)",
+  
+  "Columbia Genome Center" = "Columbia Genome Center",
+  "UGA" = "UGA",
+  "UCSD" = "UCSD",
+  "Genewiz" = "Genewiz",
+  "Northwest Genomics Center" = "Northwest Genomics Center"
+  )
+
+
+# variable_fill
+scale_fill <- list(
+  # Filter
+  scale_fill_manual(values = c("#ae2f6d","#67c9ba", "#fbef52", "#f2bfc9", "#cc504a", "#3f65c5")),
+  # Depth
+  scale_fill_manual(values = c("#aeb7e0", "#333e80")),
+  # Lysis (FALSE, TRUE)
+  scale_fill_manual(values = c("#ffffff", "#b55050")),
+  scale_fill_manual(values = c("#ffffff", "#b55050")),
+  scale_fill_manual(values = c("#ffffff", "#b55050")),
+  # Physical
+  scale_fill_manual(values = c("#ffffff", "#b57550")),
+  scale_fill_manual(values = c("#ffffff", "#b57550")),
+  scale_fill_manual(values = c("#ffffff", "#b57550")),
+  # bead beat time
+  scale_fill_stepsn(colors = c("#d6d0d4", "#d4b6cb", "#cf99be", "#c75da7", "#c22593"),
+                    na.value = "white"),
+  # lysis incubation time
+  scale_fill_stepsn(colors = c("#d6d0d4", "#d4b6cb", "#cf99be", "#c75da7", "#c22593"),
+                    na.value = "white"),
+  # lysis temp
+  scale_fill_stepsn(colors = c("#ebdd5e","#d4c220","#d4ad20", "#bd821c", "#bd671c", "#bd4a1c", "#bd241c"),
+                    na.value = "white",
+                    # guide = guide_coloursteps(even.steps = FALSE, show.limits = TRUE),
+                    breaks = c(4, 20, 30, 40, 50, 65)),
+  # extraction
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  scale_fill_manual(values = c("#ffffff", "#e3a02d")),
+  # Dnase
+  scale_fill_manual(values = c("#ffffff", "#4b5c13")),
+  scale_fill_manual(values = c("#ffffff", "#4b5c13")),
+  scale_fill_manual(values = c("#ffffff", "#4b5c13")),
+  scale_fill_manual(values = c("#ffffff", "#4b5c13")),
+  
+  scale_fill_manual(values = c("#ffffff", "#1a6e20")),
+  scale_fill_manual(values = c("#ffffff", "#1a6e20")),
+  
+  scale_fill_manual(values = c("#ffffff", "#1a6e4a")),
+  scale_fill_manual(values = c("#ffffff", "#1a6e4a")),
+  scale_fill_manual(values = c("#ffffff", "#1a6e4a")),
+  scale_fill_manual(values = c("#ffffff", "#1a6e4a")),
+  
+  scale_fill_manual(values = c("#ffffff", "#3468a8")),
+  scale_fill_manual(values = c("#ffffff", "#3468a8")),
+  # 
+  scale_fill_manual(values = c("#ffffff", "#6134a8")),
+  scale_fill_manual(values = c("#ffffff", "#6134a8")),
+  scale_fill_manual(values = c("#ffffff", "#6134a8")),
+  scale_fill_manual(values = c("#ffffff", "#6134a8")),
+  scale_fill_manual(values = c("#ffffff", "#6134a8")),
+  scale_fill_manual(values = c("#ffffff", "#6134a8")),
+  # 
+  scale_fill_manual(values = c("#ffffff", "#863594")),
+  scale_fill_manual(values = c("#ffffff", "#863594")),
+  scale_fill_manual(values = c("#ffffff", "#863594")),
+  scale_fill_manual(values = c("#ffffff", "#863594")),
+  scale_fill_manual(values = c("#ffffff", "#863594"))
+)
+# scale_fill_manual(values = c("#ffffff", "")),
+length(variable_fill);length(scale_fill)
+names(scale_fill) <- names(variable_fill)
+var_levels <- names(variable_fill)
+# var_levels
+```
+
+```{r, fig.height=12, fig.width=12}
+ggplot(df_to_plot, aes(y = sequence_id)) +
+ purrr::imap(
+    variable_fill, \(x, y) {
+      list(
+        geom_tile(
+          aes(
+            x = y,
+            fill = .data[[x]]
+          ),
+          color = "grey20",
+          width = .95
+        ),
+        scale_fill[[y]],
+        ggnewscale::new_scale_fill()
+      )
+    }
+  ) +
+  scale_x_discrete(
+    limits = var_levels,
+    position = "top"
+  ) +
+  coord_fixed(ratio = 1) +
+  theme_void() +
+  theme(
+    axis.text.y = element_text(color = "black"),
+    axis.text.x = element_text(
+      angle = 90,
+      hjust = 0
+    ),
+    axis.title = element_blank(),
+    strip.text = element_blank(),
+    legend.position = "right",
+    panel.border = element_rect(fill = NA, linewidth = 0.8),
+    panel.background = element_rect(colour = NA, fill = "transparent"),
+    plot.background = element_rect(colour = NA, fill = "transparent"),
+    plot.margin = margin(0, 0, 0, 0, "cm"),
+    panel.spacing = unit(0, "cm"),
+    legend.title = element_blank()
+  )
+```
+
+
+
+### Filter colors 
+
+```{r, fig.height=8, fig.width=4}
+# Filter assignment
+filter_col <- md %>% 
+  filter((`Sequence.ID` != "NOT SEQ'D")) %>% 
+  filter((`Sequence.ID` != "")) %>% 
+  select(SampleID = `Sequence.ID`, Filter) %>% 
+  pivot_longer(cols = -c(SampleID), names_to = "excess", values_to = "Filter") %>% 
+  # filter(PA != 0) %>% 
+  ggplot(aes(y = SampleID, x = 1, fill = Filter)) +
+  geom_tile(stat = "identity", color = "white") +
+  scale_fill_manual(values = c("#ae2f6d","#67c9ba", "#fbef52", "#f2bfc9", "#cc504a", "#3f65c5")) +
+  scale_x_discrete(position = "top", expand = c(0,0)) +
+  coord_fixed(ratio = 1) +
+  theme_classic() +
+  theme(axis.text.y = element_text(face = "bold", color = "black", size = 10),
+        # axis.text.x = element_text(face = "bold", color = "black", size = 10, angle = 90, hjust = 0, vjust = 0),
+        axis.text.x = element_blank(),
+        axis.title = element_blank(),
+        legend.position = "left",
+        panel.border = element_blank(), # will create black when ungrouped
+        # panel.border = element_rect(fill = NA, linewidth = 0.8),
+        # panel.background = element_rect(colour=NA, fill = "transparent"),
+        plot.background = element_blank(),
+        plot.margin = margin(0,0,0,0,"cm"),
+        panel.spacing = unit(0, "cm"),
+        legend.title = element_blank()) +
+  labs(y = "", x = "Filter"); filter_col
+```
+
+### Depth sampled
+
+```{r, fig.height=8, fig.width=4}
+# depth filter assignment
+depth_col <- md %>% 
+  filter((`Sequence.ID` != "NOT SEQ'D")) %>% 
+  filter((`Sequence.ID` != "")) %>% 
+  mutate(Depth = case_when(
+    (Filter == "A" | Filter == "B") ~ "30 m",
+    TRUE ~ "35 m"
+  )) %>% 
+  select(SampleID = `Sequence.ID`, Depth) %>% 
+  pivot_longer(cols = -c(SampleID), names_to = "excess", values_to = "Depth") %>% 
+  ggplot(aes(y = SampleID, x = 1, fill = Depth)) +
+  geom_tile(stat = "identity", color = "white") +
+  scale_fill_manual(values = c("grey75","grey25")) +
+  scale_x_discrete(position = "left", expand = c(0,0)) +
+  coord_fixed(ratio = 1) +
+  theme_classic() +
+  theme(axis.text.y = element_text(face = "bold", color = "black", size = 10),
+        # axis.text.x = element_text(face = "bold", color = "black", size = 10, angle = 90, hjust = 0, vjust = 0),
+        axis.text.x = element_blank(),
+        axis.title = element_blank(),
+        legend.position = "left",
+        panel.border = element_blank(), # will create black when ungrouped
+        # panel.border = element_rect(fill = NA, linewidth = 0.8),
+        panel.background = element_rect(colour=NA, fill = "transparent"),
+        plot.background = element_blank(),
+        plot.margin = margin(0,0,0,0,"cm"),
+        panel.spacing = unit(0, "cm"),
+        legend.title = element_blank()) +
+  labs(y = "", x = "Filter")
+depth_col
+```
+
+```{r}
+head(md)
+```
+
+
+Do a series of pivot longer based on what we need...
+```{r, fig.height=8, fig.width=5}
+combo <- c("Bead beater/vortex", "Bead Beater/Vortex", "Bead beater/Vortex")
+
+# Extraction information
+rna_ex_bin <- md %>% 
+  filter((`Sequence.ID` != "NOT SEQ'D")) %>% 
+  filter((`Sequence.ID` != "")) %>% 
+  mutate(Lysis_reag = case_when(
+    grepl("Beta Merc", `Lysis.notes..TCEP.or.betamercaptoethanol.`) ~ "β-mercaptoethanol",
+    grepl("TCEP", `Lysis.notes..TCEP.or.betamercaptoethanol.`) ~ "+TCEP",
+    TRUE ~ "")) %>% 
+  mutate(Physical_distruption = case_when(
+    grepl("\\?", `Beater.type`) ~ "Unknown",
+    (`Beater.type` %in% combo) ~ "Vortex with beads",
+    (`Beater.type` == "Beads" | `Beater.type` == "Biospec Mini Beadbeater") ~ "Beads",
+    (`Beater.type` == "Vortex") ~ "Vortex")) %>% 
+  mutate(DNase = case_when(
+    (DNase_brand == "//?" | DNase_brand == "" | is.na(DNase_brand)) ~ "Unknown",
+    (DNase_brand == "Qiagen RNase-free DNase" | DNase_brand == "Part of Qiagen Kit") ~ "Qiagen RNase-free DNase",
+    grepl("Turbo", DNase_brand) ~ "Turbo DNase",
+    (DNase_brand == "Kit provided" | DNase_brand == "rDNase part of kit" | DNase_brand == "part of Zymo kit" | DNase_brand == "rDNAse part of Macherey-Nagel \nkit") ~ "Kit provided",
+    (DNase_brand == "RNAqueous-4PCR Total RNA Isolation ") ~ "RNAqueous-4PCR Total RNA Isolation")) %>% 
+  mutate(Elution = case_when(
+    grepl("Elution", `Elution.Type`) ~ "Elution solution",
+    TRUE ~ "RNase-free water"
+  )) %>% 
+  mutate(Quantification = case_when(
+    grepl("Qubit", `RNA.quant.device`) ~ "Qubit",
+    TRUE ~ `RNA.quant.device`)) %>% 
+  mutate(DNase_bin = case_when(
+    (`DNase..Y.N.` == "Y") ~ 1,
+    TRUE ~ 0)) %>% 
+  mutate(Physical_bin = case_when(
+    (`Physical.disruption..Y.N.` == "Y") ~ 1,
+    TRUE ~ 0)) %>% 
+  # Categorical information for extraction
+  select(Filter, SampleID = `Sequence.ID`, Protocol = `Extraction.Protocol`, Kit = `Exact_kit_name`, Lysis_reag, Physical_bin, Physical_distruption, DNase_bin, DNase, Elution, Quantification) %>% 
+  pivot_longer(cols = -c(Filter, SampleID, ends_with("_bin")), names_to = "extraction_category", values_to = "extraction_bin") %>% 
+  # separate_longer_delim(extraction_bin, delim = ",") %>% 
+  filter(!is.na(extraction_bin)) %>% 
+  filter(extraction_bin != "")
+
+unique(rna_ex_bin$extraction_category)
+```
+
+Not including:
+* Including Filter number and sequence ID for identification. 
+* Extraction protocol will be used, not the Extraction kit name...?
+* Extraction Type
+
+### Extraction plot
+
+```{r, fig.height=8, fig.width=5}
+extraction <- rna_ex_bin %>% 
+  add_column(PA = "Y") %>%
+  # filter(extraction_category != "Bead") %>% 
+  filter(extraction_category != "Kit") %>% 
+  mutate(EXTRACT_ORDER = factor(extraction_category, levels = c("Lysis_reag", "Physical_distruption", 
+                                                                "Protocol", "DNase", "Elution", "Quantification"),
+                                labels = c("Lysis", "Disruption", "Extraction protocol", "DNase treatment", "Elution", "Quantification"))) %>% 
+  ggplot(aes(y = SampleID, x = extraction_bin, fill = PA)) +
+  geom_tile(stat = "identity", color = "white") +
+  # scale_fill_manual(values = c("white", "black")) +
+  scale_x_discrete(position = "top") +
+  # coord_fixed(ratio = 1) +
+  facet_grid(cols = vars(EXTRACT_ORDER), space = "free", scale = "free", labeller = label_wrap_gen(width = 5)) +
+  scale_fill_manual(values = c("grey20")) +
+  theme_classic() +
+  theme(axis.text.y = element_text(color = "black", size = 6),
+        axis.ticks.y = element_blank(),
+        strip.text = element_text(face = "bold", color = "black", size = 6),
+        axis.text.x = element_text(color = "black", size = 8, angle = 90, hjust = 0, vjust = 1),
+        strip.placement = "outside",
+        strip.background = element_blank(),
+        legend.position = "none",
+        panel.background = element_rect(colour=NA, fill = "transparent"),
+        plot.background = element_blank(),
+        plot.margin = margin(0,0,0,0,"cm"),
+        panel.spacing = unit(0, "cm"),
+        legend.title = element_blank(), 
+        panel.border = element_rect(fill = NA, linewidth = 0.8)) +
+  labs(x = "", y = "")
+
+extraction
+```
+
+```{r, fig.height=8}
+filter_col + depth_col + extraction + patchwork::plot_layout(nrow =1, widths = c(0.5, 0.5, 0.8))
+# class(filter_col)
+```
+
+
+Lysis details.
+```{r, fig.height=8}
+lysis <- md %>% 
+  filter(Sequence.ID != "NOT SEQ'D" & !is.na(Sequence.ID) & Sequence.ID != "") %>% 
+  mutate(Bead_min = as.numeric(BB_time..min.),
+         Lysis_min = as.numeric(Lysis_incubation_time..min.)) %>% 
+  mutate(Bead = str_replace_all(`Bead.Size`, " ", ""),
+         # Bead = str_replace_all(Bead, "-", ","),
+         Bead = str_replace_all(Bead, "mm", ""),
+         Bead = str_replace_all(Bead, "and", ",")) %>% 
+  mutate(Lysis_temp = case_when(
+    `Lysis_temp.Deg.C` == "Ice" ~ 4,
+    `Lysis_temp.Deg.C` == "" ~ NA,
+    TRUE ~ as.numeric(`Lysis_temp.Deg.C`))) %>% 
+  select(Sequence.ID, Bead_min, Bead, Lysis_min, Lysis_temp)
+
+lysismin_plot <- lysis %>% 
+  ggplot(aes(y = Sequence.ID, x = 1, fill = Lysis_min)) +
+  geom_tile(stat = "identity", color = "white") + 
+  scale_fill_stepsn(colors = c("grey90","grey70", "grey50", "grey30", "grey10", "black"),
+                    na.value = "white",
+                      # guide = guide_coloursteps(even.steps = FALSE,
+                      #                           show.limits = TRUE),
+                      breaks = c(4, 15, 30, 45, 60, 90, 120)) +
+  coord_fixed(ratio = 1) +
+  theme_classic() +
+  theme(axis.text.y = element_text(color = "black", size = 6),
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        legend.position = "left",
+        # panel.background = element_rect(colour=NA, fill = "transparent"),
+        plot.background = element_blank(),
+        plot.margin = margin(0,0,0,0,"cm"),
+        panel.spacing = unit(0, "cm"),
+        legend.title = element_blank(),
+        panel.border = element_blank()) +
+        # panel.border = element_rect(fill = NA, linewidth = 0.8)) +
+  labs(x = "", y = "", title = "Number of minutes for lysis")
+lysismin_plot
+```
+
+
+
+### Combined plot for lysis
+
+```{r, fig.height=8, fig.width=18}
+filter_col + depth_col + extraction + bead_size + beadmin_plot +
+  lysistemp_plot + lysismin_plot + patchwork::plot_layout(nrow  = 1, widths = c(1, 1, 3.5, 0.5, 1, 1, 1))
+
+ggsave("extraction_raw_june.svg", width = 18, height = 8, device = "svg", limitsize = FALSE)
+```
+
+## Cluster samples by processing method
+
+Right now the heatmap above is ordered alphabetically by Sequence ID, which makes it hard to see which samples were actually handled alike. Cluster samples by their processing variables (extraction protocol, lysis reagent, physical disruption method, DNase, elution, quantification, plus the numeric bead size/lysis time/lysis temp) so the heatmap rows group by processing similarity instead.
+
+These variables mix categorical and numeric types, so Euclidean distance doesn't apply directly. Use Gower distance (`cluster::daisy`), which combines simple matching (categorical) and normalized range distance (numeric) into one metric and handles the scattered missing values (e.g. unknown beater type) with pairwise-complete comparisons rather than dropping the row.
+
+```{r}
+library(cluster)
+
+processing_df <- md %>%
+  filter((`Sequence.ID` != "NOT SEQ'D")) %>%
+  filter((`Sequence.ID` != "")) %>%
+  mutate(Lysis_reag = case_when(
+    grepl("Beta Merc", `Lysis.notes..TCEP.or.betamercaptoethanol.`) ~ "beta-mercaptoethanol",
+    grepl("TCEP", `Lysis.notes..TCEP.or.betamercaptoethanol.`) ~ "TCEP",
+    TRUE ~ "none")) %>%
+  mutate(Physical_distruption = case_when(
+    grepl("\\?", `Beater.type`) ~ NA_character_,
+    (`Beater.type` %in% combo) ~ "Vortex with beads",
+    (`Beater.type` == "Beads" | `Beater.type` == "Biospec Mini Beadbeater") ~ "Beads",
+    (`Beater.type` == "Vortex") ~ "Vortex")) %>%
+  mutate(DNase = case_when(
+    DNase_brand %in% c("", "?") ~ NA_character_,
+    grepl("Turbo", DNase_brand, ignore.case = TRUE) & grepl("Qiagen", DNase_brand, ignore.case = TRUE) ~ "Qiagen + Turbo DNase",
+    grepl("Turbo", DNase_brand, ignore.case = TRUE) ~ "Turbo DNase",
+    grepl("Qiagen", DNase_brand, ignore.case = TRUE) ~ "Qiagen RNase-free DNase",
+    grepl("Zymo", DNase_brand, ignore.case = TRUE) ~ "Kit-provided (Zymo)",
+    grepl("Macherey", DNase_brand, ignore.case = TRUE) ~ "Kit-provided (Macherey-Nagel)",
+    grepl("RNAqueous", DNase_brand, ignore.case = TRUE) ~ "Kit-provided (RNAqueous)",
+    TRUE ~ "Kit-provided (unspecified)")) %>%
+  mutate(Elution = case_when(
+    grepl("Elution", `Elution.Type`) ~ "Elution solution",
+    TRUE ~ "RNase-free water")) %>%
+  mutate(Quantification = case_when(
+    grepl("Qubit", `RNA.quant.device`) ~ "Qubit",
+    TRUE ~ `RNA.quant.device`)) %>%
+  mutate(Bead_min = suppressWarnings(as.numeric(`BB_time..min.`)),
+         Lysis_min = suppressWarnings(as.numeric(`Lysis_incubation_time..min.`)),
+         Lysis_temp = case_when(
+           `Lysis_temp.Deg.C` == "Ice" ~ 4,
+           `Lysis_temp.Deg.C` == "" ~ NA_real_,
+           TRUE ~ suppressWarnings(as.numeric(`Lysis_temp.Deg.C`)))) %>%
+  select(SampleID = `Sequence.ID`,
+         Protocol = `Extraction.Protocol`,
+         Lysis_reag, Physical_distruption, DNase, Elution, Quantification,
+         Bead_min, Lysis_min, Lysis_temp) %>%
+  mutate(across(c(Protocol, Lysis_reag, Physical_distruption, DNase, Elution, Quantification), as.factor)) %>%
+  column_to_rownames("SampleID")
+
+glimpse(processing_df)
+```
+
+```{r}
+gower_dist <- daisy(processing_df, metric = "gower")
+hc <- hclust(gower_dist, method = "average")
+```
+
+Pick the number of clusters `k` by average silhouette width across a range of `k`, rather than eyeballing the dendrogram.
+
+```{r}
+sil_width <- sapply(2:8, function(k) {
+  mean(silhouette(cutree(hc, k = k), gower_dist)[, "sil_width"])
+})
+data.frame(k = 2:8, sil_width = sil_width)
+
+k_opt <- (2:8)[which.max(sil_width)]
+k_opt
+```
+
+```{r, fig.height=5, fig.width=8}
+plot(hc, hang = -1, cex = 0.6, xlab = "", sub = "",
+     main = "Samples clustered by processing method (Gower distance)")
+rect.hclust(hc, k = k_opt, border = 2:(k_opt + 1))
+```
+
+```{r}
+sample_order <- rownames(processing_df)[hc$order]
+
+processing_df_clustered <- processing_df %>%
+  rownames_to_column("SampleID") %>%
+  mutate(PROCESSING_CLUSTER = factor(cutree(hc, k = k_opt))) %>%
+  mutate(SampleID = factor(SampleID, levels = sample_order))
+```
+
+### Re-draw the extraction heatmap grouped by processing cluster
+
+Reuse the tile plots built above (`filter_col`, `depth_col`, `extraction`, `bead_size`, `beadmin_plot`, `lysistemp_plot`, `lysismin_plot`) and just override each one's row order with `sample_order`, rather than rebuilding them.
+
+```{r, fig.height=8, fig.width=2}
+cluster_col <- processing_df_clustered %>%
+  ggplot(aes(y = SampleID, x = 1, fill = PROCESSING_CLUSTER)) +
+  geom_tile(color = "white") +
+  scale_fill_brewer(palette = "Set2") +
+  coord_fixed(ratio = 1) +
+  theme_classic() +
+  theme(axis.text.y = element_text(face = "bold", color = "black", size = 6),
+        axis.text.x = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position = "left",
+        panel.border = element_blank(),
+        plot.background = element_blank(),
+        plot.margin = margin(0,0,0,0,"cm"),
+        panel.spacing = unit(0, "cm"),
+        legend.title = element_blank()) +
+  labs(y = "", x = "Processing\ncluster")
+cluster_col
+```
+
+```{r, fig.height=8, fig.width=19}
+cluster_col +
+  (filter_col     + scale_y_discrete(limits = sample_order)) +
+  (depth_col      + scale_y_discrete(limits = sample_order)) +
+  (extraction     + scale_y_discrete(limits = sample_order)) +
+  (bead_size      + scale_y_discrete(limits = sample_order)) +
+  (beadmin_plot   + scale_y_discrete(limits = sample_order)) +
+  (lysistemp_plot + scale_y_discrete(limits = sample_order)) +
+  (lysismin_plot  + scale_y_discrete(limits = sample_order)) +
+  patchwork::plot_layout(nrow = 1, widths = c(0.3, 1, 1, 3.5, 0.5, 1, 1, 1))
+
+ggsave("extraction_clustered.svg", width = 19, height = 8, device = "svg", limitsize = FALSE)
+```
+
+# RNA yield
+
+```{r}
+head(md)
+```
+
+
+First isolate concentrations
+```{r}
+raw_reads <- md %>% 
+    filter(Sequence.ID != "NOT SEQ'D" & !is.na(Sequence.ID) & Sequence.ID != "") %>% 
+  select(Sequence.ID, ng_ul = RNA.concentration..ng.uL., ng = Total.RNA.yield..ug., RIN, 
+         Sequencing, SequenceMachine = `Sequencing.Machine`, Cycles = `Cycles..e.g...PE.150.`,
+         PREP = Library.Prep.Type, 
+         Reads = `Sequence.Reads`,
+         BUSCO_Complete = BUSCO.Complete, 
+         BUSCO_Partial = BUSCO.Partial, 
+         GeneMarkST = `X..of.Genes..GeneMark.ST.`,
+         Transcripts, Transcripts_500bp = `Transcripts...500.bp`, 
+         Transcripts_1000bp = `Transcripts...1000.bp`, 
+         Avg_length_assembly = Average.length.of.assembled.transcripts, 
+         Longest = Longest.transcript, N50 = Transcript.N50)
+```
+
+```{r}
+summary(raw_reads$ng)
+summary(raw_reads$RIN)
+```
+
+```{r}
+head(raw_reads)
+```
+
+```{r, fig.height=8, fig.width=5}
+conc_qual <- raw_reads %>% 
+  select(Sequence.ID, ng_ul, ng, RIN) %>% 
+  pivot_longer(cols = -c(Sequence.ID), names_to = "VARIABLE", values_to = "VALUE") %>% 
+  mutate(value = as.numeric(VALUE)) %>% 
+  mutate(variable_order = factor(VARIABLE, levels = c("ng_ul", "ng", "RIN"), labels = c("ng/µl", "ng", "RIN"))) %>% 
+  ggplot(aes(y = Sequence.ID, x = value)) +
+  geom_bar(stat = "identity", fill = "grey20", color = "black", width = 0.7) +
+  facet_grid(cols = vars(variable_order), scale = "free_x") +
+  theme_classic() +
+  scale_x_continuous(position = "top") +
+  theme(axis.text.y = element_text(color = "black", size = 6),
+        # axis.ticks = element_blank(),
+        axis.text.x = element_text(color = "black", size = 8, angle = 0, hjust = 0.5, vjust = 1),
+        legend.position = "right",
+        panel.background = element_rect(colour=NA, fill = "transparent"),
+        plot.background = element_rect(colour=NA, fill = "transparent"),
+        plot.margin = margin(0,0,0,0,"cm"),
+        panel.grid.major = element_line(color = "grey70", linetype = "dashed"),
+        strip.placement = "outside",
+        strip.background = element_blank(),
+        panel.spacing = unit(0, "cm"),
+        legend.title = element_blank(),
+        panel.border = element_rect(fill = NA, linewidth = 0.8)) +
+  labs(x = "", y = "", title = "")
+conc_qual
+```
+```{r}
+head(raw_reads)
+```
+
+```{r, fig.height=8, fig.width=3}
+seq_prep <- raw_reads %>% 
+  select(`Sequence.ID`, Sequencing, SequenceMachine, 
+         Cycles, PREP) %>% 
+  pivot_longer(cols = -c(Sequence.ID), names_to = "VARIABLE", values_to = "VALUE") %>% 
+  mutate(variable_order = factor(VARIABLE, levels = c("Sequencing", "SequenceMachine", "Cycles", "PREP"))) %>%
+  add_column(VAL = "1") %>% 
+  ggplot(aes(y = Sequence.ID, x = VALUE, fill = VAL)) +
+  geom_tile(color = "white") +
+  facet_grid(cols = vars(variable_order), scale = "free", space = "free") +
+  scale_fill_manual(values = c("grey20", "white")) +
+  theme_classic() +
+  scale_x_discrete(position = "top") +
+  theme(axis.text.y = element_text(color = "black", size = 6),
+       strip.text.x = element_text(color = "black", size = 8),
+       strip.placement = "outside",
+        axis.text.x = element_text(color = "black", size = 8, angle = 45, hjust = 0, vjust = 0.5),
+        legend.position = "none",
+        panel.background = element_rect(colour=NA, fill = "transparent"),
+        plot.background = element_rect(colour=NA, fill = "transparent"),
+        plot.margin = margin(0,0,0,0,"cm"),
+        panel.spacing = unit(0, "cm"),
+       strip.background = element_blank(),
+        legend.title = element_blank(),
+        panel.border = element_rect(fill = NA, linewidth = 0.8)) +
+  labs(x = "", y = "", title = "")
+seq_prep
+```
+
+```{r}
+head(raw_reads)
+```
+
+```{r, fig.height=8, fig.width=5}
+busco <- raw_reads %>% 
+  select(Sequence.ID, BUSCO_Complete, BUSCO_Partial) %>% 
+         # Transcripts, Transcripts_500bp, Transcripts_1000bp, 
+         # Avg_length_assembly, Longest, N50) %>% 
+  pivot_longer(cols = -c(Sequence.ID), names_to = "VARIABLE", values_to = "VALUE") %>% 
+  mutate(value = as.numeric(VALUE)) %>% 
+  mutate(variable_order = factor(VARIABLE, levels = c("BUSCO_Complete", "BUSCO_Partial"), labels = c("Complete", "Partial"))) %>% 
+  ggplot(aes(y = Sequence.ID, x = value, fill = variable_order)) +
+  geom_bar(stat = "identity", color = "black", position = "stack", width = 0.7) +
+  scale_fill_manual(values = c("#ed6d64", "#88bfd1")) +
+  theme_classic() +
+  facet_grid(cols = vars(variable_order)) +
+  scale_x_continuous(position = "top") +
+  theme(axis.text.y = element_text(color = "black", size = 6),
+        axis.text.x = element_text(color = "black", size = 8),
+        strip.placement = "outside",
+        strip.background = element_blank(),
+        legend.position = "right",
+        panel.grid.major = element_line(color = "grey70", linetype = "dashed"),
+        legend.title = element_blank()) +
+  labs(x = "BUSCO", y = "", title = "")
+busco
+
+# ggsave("busco.svg", width = 5, height = 8, device = "svg", limitsize = FALSE)
+```
+```{r}
+head(raw_reads)
+```
+
+```{r, fig.height=8, fig.width=8}
+library(scales)
+
+transcript_quan <- raw_reads %>% 
+  mutate(Avg_length_assembly = as.character(Avg_length_assembly)) %>% 
+  mutate(Longest = as.character(Longest)) %>% 
+  select(Sequence.ID, Reads, Transcripts, Transcripts_500bp, Transcripts_1000bp,
+         GeneMarkST, Avg_length_assembly, Longest) %>% 
+  pivot_longer(cols = -c(Sequence.ID), names_to = "VARIABLE", values_to = "VALUE") %>% 
+  # mutate(value = as.numeric(VALUE)) %>% 
+  mutate(value = as.numeric(gsub(",", "", VALUE))) %>% 
+  mutate(variable_order = factor(VARIABLE, levels = c("Reads","Transcripts", "Transcripts_500bp", "Transcripts_1000bp", "GeneMarkST", "Avg_length_assembly", "Longest"), labels = c("Total Reads","Total Transcripts", "Transcripts >500bp", "Transcripts >1000 bps", "GeneMarkST", "Mean assembly length", "Longest contig"))) %>% 
+  ggplot(aes(y = Sequence.ID, x = value, fill = variable_order)) +
+  geom_bar(stat = "identity", color = "black", width = 0.7) +
+  # scale_fill_manual(values = c("#f2c763", "#f2a663", "#f28063", "#bd4d02")) +
+  facet_grid(cols = vars(variable_order), scale = "free_x") +
+  scale_x_continuous(labels = function(x) format(x, scientific = TRUE), position = "top") +
+  theme_classic() +
+  theme(axis.text.y = element_text(color = "black", size = 6),
+        axis.text.x = element_text(color = "black", size = 8, angle = 45, hjust = 0, vjust = 0),
+        legend.position = "right",
+        strip.placement = "outside",
+        strip.background = element_blank(),
+        panel.background = element_rect(colour=NA, fill = "transparent"),
+        plot.background = element_rect(colour=NA, fill = "transparent"),
+        panel.grid.major = element_line(color = "grey70", linetype = "dashed"),
+        plot.margin = margin(0,0,0,0,"cm"),
+        panel.spacing = unit(0, "cm"),
+        legend.title = element_blank(),
+        panel.border = element_rect(fill = NA, linewidth = 0.8)) +
+  labs(x = "", y = "", title = "")
+
+transcript_quan
+```
+
+
+
+```{r, fig.height=8, fig.width=8}
+# assembly_stat <- raw_reads %>% 
+#   select(Sequence.ID, Avg_length_assembly, Longest, N50) %>% 
+#   pivot_longer(cols = -c(Sequence.ID), names_to = "VARIABLE", values_to = "VALUE") %>% 
+#   mutate(value = as.numeric(VALUE)) %>% 
+#   mutate(variable_order = factor(VARIABLE, levels = c("Avg_length_assembly", "Longest", "N50"), labels = c("Average length", "Longest contig", "N50"))) %>% 
+#   ggplot(aes(y = Sequence.ID, x = value, fill = variable_order)) +
+#   geom_bar(stat = "identity", color = "black", width = 0.7) +
+#   scale_fill_manual(values = c("#63f2dd", "#63c3f2", "#6391f2")) +
+#   facet_grid(cols = vars(variable_order), scale = "free_x") +
+#   scale_x_continuous(position = "top") +
+#   theme_classic() +
+#   theme(axis.text.y = element_text(color = "black", size = 6),
+#         axis.text.x = element_text(color = "black", size = 8, angle = 45, hjust = 0, vjust = 1),
+#         legend.position = "right",
+#         strip.placement = "outside",
+#         strip.background = element_blank(),
+#         panel.background = element_rect(colour=NA, fill = "transparent"),
+#         plot.background = element_rect(colour=NA, fill = "transparent"),
+#         panel.grid.major = element_line(color = "grey70", linetype = "dashed"),
+#         plot.margin = margin(0,0,0,0,"cm"),
+#         panel.spacing = unit(0, "cm"),
+#         legend.title = element_blank(),
+#         panel.border = element_rect(fill = NA, linewidth = 0.8)) +
+#   labs(x = "", y = "", title = "")
+# assembly_stat
+```
+
+```{r, fig.height=8, fig.width=18}
+conc_qual + seq_prep + busco + 
+  transcript_quan + patchwork::plot_layout(nrow= 1, widths = c(1, 0.6, 0.4, 1.4))
+
+ggsave("rna_yield_transcripts-june.svg", width = 18, height = 8, device = "svg", limitsize = FALSE)
+```
+
