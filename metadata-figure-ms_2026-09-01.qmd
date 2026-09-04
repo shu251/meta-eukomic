@@ -1,0 +1,661 @@
+---
+title: "Metadata compilation figure"
+date: 2026-09-02
+format:
+  html:
+    toc: true
+editor: source
+---
+
+# Overview
+
+Make multi-panel metadata figure for meta-eukomic effort.
+
+| Panel | Contents |
+|------------------------------|------------------------------------------|
+| `heat_sample` | Filter, depth, lysis reagent, physical disruption |
+| `bead_size` | Bead size range (mm) |
+| `heat_chemistry` | Lysis timing/temperature, extraction kit, DNase, elution, quantification |
+| `rna_qc` | RIN, ng/µl, total µg |
+| `heat_sequencing` | Library prep, sequencer, sequencing facility |
+| `assembly_stats` | Reads, BUSCO, transcript and assembly metrics |
+
+color guide:
+
+- **Colored** -- method was used
+- **Grey** -- method was recorded as unknown.
+- **White** -- no record / method not used / NA
+
+# Setup
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(janitor)
+library(scales)
+library(patchwork)
+library(ggnewscale)
+
+# size aprameters for the output figure. 
+cell_mm <- 3.2
+show_legends <- FALSE #no legends if FALSE
+
+# header strips need ggh4x for exact panel sizing used later.
+has_ggh4x <- requireNamespace("ggh4x", quietly = TRUE)
+
+if (!has_ggh4x) {
+  message("ggh4x not installed - group header strips will be disabled. ",
+          "install.packages('ggh4x')")
+}
+```
+
+# Import and check metadata
+
+`clean_names()` standardises column names; the two checks below report duplicated sample IDs and all-empty columns before anything downstream depends on them.
+
+
+> SH To do, make the input file anonymous for labs. Create look up table.
+
+```{r}
+#| label: import-metadata
+#| message: false
+
+metadata_raw <- read_csv(
+  "RNAExtractions_Metadata_V1.1.csv",
+  show_col_types = FALSE
+) |>
+  clean_names() |> 
+  mutate(sequencing_facility_raw = replace_na(sequencing_facility_raw, "UCSD"))
+
+# Check uniquies. one row per sequence_id.
+dupe_ids <- metadata_raw |> get_dupes(sequence_id)
+
+if (nrow(dupe_ids) > 0) {
+  warning("Duplicated sequence_id values found:")
+  print(dupe_ids)
+} else {
+  cat("No duplicated sequence_id values.\n")
+}
+
+# KEEP empty columns so all parameters line up
+empty_cols <- setdiff(
+  names(metadata_raw),
+  names(remove_empty(metadata_raw, which = "cols"))
+)
+
+cat("All-NA columns:", if (length(empty_cols)) paste(empty_cols, collapse = ", ") else "none", "\n")
+
+cat("Rows:", nrow(metadata_raw), " Columns:", ncol(metadata_raw), "\n")
+```
+
+## Depth
+
+`sequencing_facility` now comes straight from `RNAExtractions_Metadata_V1_cleaned.csv` (resolved once, in `scripts/clean_rna_extraction_metadata.R`, rather than by a join here -- see `facility_filled` in that file for which rows were backfilled rather than read from the raw sheet).
+
+```{r}
+#| label: derive-depth
+#| message: false
+
+stopifnot(!anyNA(metadata_raw$sequencing_facility))
+
+metadata_clean <- metadata_raw |>
+  mutate(depth = if_else(filter %in% c("A", "B"), "30 m", "35 m"))
+```
+
+## Code categorical levels
+
+Per-column order, naming, unchanged in meaning from the original. Comma-delimited values are split into separate heatmap columns further down.
+
+```{r}
+#| label: recode-levels
+
+metadata_recoded <- metadata_clean |>
+  mutate(
+    lysis_reagent = str_replace_all(lysis_reagent, "none", "Unknown_lysis"),
+    physical_disruption_method = replace_na(physical_disruption_method, "Unknown_disrupt"),
+    physical_disruption_method = str_replace_all(
+      physical_disruption_method, "Vortex with beads", "Vortex,Beads"
+    ),
+    dnase_brand_clean = case_when(
+      str_detect(dnase_brand_clean, "Kit-provided") ~ "Kit-provided",
+      dnase_brand_clean == "Qiagen + Turbo DNase"   ~ "Qiagen RNase-free DNase,Turbo DNase",
+      is.na(dnase_brand_clean)                      ~ "Unknown_dnase",
+      .default = dnase_brand_clean
+    ),
+    across(c(bead_beat_time_min, lysis_temp_c, lysis_incubation_time_min), as.numeric)
+  )
+
+sample_levels <- sort(unique(metadata_recoded$sequence_id))
+
+# View(metadata_recoded)
+```
+
+```{r}
+# str(metadata_recoded)
+lab_lookup <- as.data.frame(metadata_recoded) |>
+dplyr::select(lab, lab_id)
+write.csv(lab_lookup, file = "output-files/INTERNAL-lablookup.csv")
+metadata_recoded <- metadata_recoded |> dplyr::select(-lab)
+write.csv(metadata_recoded, "metadata_09032026.csv")
+```
+
+```{r}
+metadata_recoded <- read.csv("metadata_09032026.csv")
+```
+
+# Variable key
+
+One row per heatmap column. This table controls **order, grouping, labelling and colour** for every column in the three heatmap panels -- it replaces the paired `variable_fill` / `scale_fill` lists, which had to stay the same length and in the same order by hand.
+
+- `type = "presence"` -- column is one level of `source`; filled with the block colour when that level is present for a sample.
+- `type = "own"` -- column carries its own values and gets its own fill scale (see `own_scales` below).
+- `is_unknown = TRUE` -- filled grey rather than the block colour.
+
+```{r}
+#| label: variable-key
+
+var_key <- tribble(
+  ~panel, ~block, ~label, ~source, ~level, ~type, ~is_unknown,
+  #panel 1: sample + lysis + disruption
+  "sample", "sample", "Filter", "filter", NA, "own", FALSE,
+"sample","sample", "Depth","depth",NA, "own",FALSE,
+"sample","lysis", "β-mercaptoethanol","lysis_reagent","beta-mercaptoethanol","presence",FALSE,
+"sample","lysis", "+TCEP", "lysis_reagent","TCEP","presence",FALSE,
+"sample","lysis", "Unknown lysis buffer","lysis_reagent","Unknown_lysis", "presence",TRUE,
+"sample","disruption","Beads", "physical_disruption_method", "Beads", "presence",FALSE,
+"sample","disruption","Vortex","physical_disruption_method", "Vortex","presence",FALSE,
+"sample","disruption","Unknown method","physical_disruption_method", "Unknown_disrupt", "presence",TRUE,
+#panel 2: lysis conditions + extraction chemistry ----------------------
+"chemistry", "timing","Bead beat (min)", "bead_beat_time_min", NA,"own", FALSE,
+"chemistry", "timing","Lysis incubation (min)","lysis_incubation_time_min",NA,"own", FALSE,
+"chemistry", "timing","Lysis temp °C","lysis_temp_c", NA,"own", FALSE,
+"chemistry", "extraction","NucleoMag RNA", "extraction_protocol","NucleoMag RNA", "presence",FALSE,
+"chemistry", "extraction","NucleoSpin RNA","extraction_protocol","NucleoSpin RNA","presence",FALSE,
+"chemistry", "extraction","Qiagen AllPrep RNA/DNA","extraction_protocol","Qiagen AllPrep RNA/DNA","presence",FALSE,
+"chemistry", "extraction","Qiagen PowerWater RNA", "extraction_protocol","Qiagen PowerWater RNA", "presence",FALSE,
+"chemistry", "extraction","Qiagen RNeasy", "extraction_protocol","Qiagen RNeasy", "presence",FALSE,
+"chemistry", "extraction","Qiagen RNeasy Plant Mini Kit","extraction_protocol","Qiagen RNeasy Plant Mini Kit","presence",FALSE,
+"chemistry", "extraction","RNAqueous-4PCR Total RNA Isolation","extraction_protocol","RNAqueous-4PCR Total RNA Isolation","presence",FALSE,
+"chemistry", "extraction","Thermo Fisher Trizol","extraction_protocol","Thermo Fisher Trizol","presence",FALSE,
+"chemistry", "extraction","Zymo Quick DNA/RNA miniprep kit", "extraction_protocol","Zymo Quick DNA/RNA miniprep kit", "presence",FALSE,
+"chemistry", "extraction","Zymo RNA MiniPrep Plus","extraction_protocol","Zymo RNA MiniPrep Plus","presence",FALSE,
+"chemistry", "extraction","Zymo RNA Quick","extraction_protocol","Zymo RNA Quick","presence",FALSE,
+"chemistry", "dnase", "Kit-provided","dnase_brand_clean","Kit-provided","presence",FALSE,
+"chemistry", "dnase", "Qiagen RNase-free DNase", "dnase_brand_clean","Qiagen RNase-free DNase", "presence",FALSE,
+"chemistry", "dnase", "Turbo DNase", "dnase_brand_clean","Turbo DNase", "presence",FALSE,
+"chemistry", "dnase", "Unknown DNase", "dnase_brand_clean","Unknown_dnase", "presence",TRUE,
+"chemistry", "elution", "RNase-free water","elution_solution", "RNase-free water","presence",FALSE,
+"chemistry", "elution", "Kit elution solution","elution_solution", "Elution solution","presence",FALSE,
+"chemistry", "quant", "Bioanalyzer", "quantification_method","Bioanalyzer", "presence",FALSE,
+"chemistry", "quant", "Qubit", "quantification_method","Qubit", "presence",FALSE,
+"chemistry", "quant", "RiboGreen", "quantification_method","RiboGreen", "presence",FALSE,
+"chemistry", "quant", "Nanodrop","quantification_method","Nanodrop","presence",FALSE,
+#panel 3: library prep + sequencing ------------------------------------
+"sequencing","library", "PolyA", "library_prep_type","PolyA", "presence",FALSE,
+"sequencing","library", "rRNA depletion","library_prep_type","rRNA depletion","presence",FALSE,
+"sequencing","sequencer", "Illumina NovaSeq 6000", "sequencing_machine", "Illumina NovaSeq 6000", "presence",FALSE,
+"sequencing","sequencer", "Illumina NextSeq 2000 Flow Cell P2","sequencing_machine", "Illumina NextSeq 2000 Flow Cell P2","presence",FALSE,
+"sequencing","sequencer", "Illumina NovaSeq S4", "sequencing_machine", "Illumina NovaSeq S4", "presence",FALSE,
+"sequencing","sequencer", "Illumina HiSeq 4000", "sequencing_machine", "Illumina HiSeq 4000", "presence",FALSE,
+"sequencing","sequencer", "Illumina NovaSeq S2", "sequencing_machine", "Illumina NovaSeq S2", "presence",FALSE,
+"sequencing","sequencer", "NovaSeq X (PE150)", "sequencing_machine", "NovaSeq X (PE150)", "presence",FALSE,
+"sequencing","facility","Columbia Genome Center","sequencing_facility","Columbia Genome Center","presence",FALSE,
+"sequencing","facility","UGA", "sequencing_facility","UGA", "presence",FALSE,
+"sequencing","facility","UCSD","sequencing_facility","UCSD","presence",FALSE,
+"sequencing","facility","Genewiz", "sequencing_facility","Genewiz", "presence",FALSE,
+"sequencing","facility","Northwest Genomics Center", "sequencing_facility","Northwest Genomics Center", "presence",FALSE
+) |>
+  mutate(
+    panel     = factor(panel, levels = c("sample", "chemistry", "sequencing")),
+    block     = factor(block, levels = unique(block)),
+    label     = factor(label, levels = unique(label)),
+    fill_key  = if_else(is_unknown, "unknown", as.character(block))
+  )
+
+stopifnot(
+  !anyDuplicated(var_key$label),
+  all(var_key$source %in% names(metadata_recoded))
+)
+
+var_key |> count(panel, block) |> print(n = Inf)
+```
+
+## Colours
+
+One colour per variable block, plus grey for unknowns. These are the same hex values as the original figure.
+
+```{r}
+#| label: palettes
+
+block_pal <- c(
+  lysis      = "#b55050",
+  disruption = "#b57550",
+  extraction = "#e3a02d",
+  dnase      = "#4b5c13",
+  elution    = "#1a6e20",
+  quant      = "#1a6e4a",
+  library    = "#3468a8",
+  sequencer  = "#6134a8",
+  facility   = "#863594",
+  unknown    = "#9e9e9e"
+)
+
+# Group header text for the facet strips.
+block_labels <- c(
+  sample     = "Sample",
+  lysis      = "Lysis reagent",
+  disruption = "Disruption",
+  timing     = "Lysis conditions",
+  extraction = "Extraction kit",
+  dnase      = "DNase",
+  elution    = "Elution",
+  quant      = "Quantification",
+  library    = "Library prep",
+  sequencer  = "Sequencer",
+  facility   = "Sequencing facility"
+)
+
+# Self-scaled columns. Stored as functions so each plot builds a fresh,
+# untrained scale object.
+guide_or_none <- function() if (show_legends) "colourbar" else "none"
+
+own_scales <- list(
+  filter = function() {
+    scale_fill_manual(
+      values = c(A = "#ae2f6d", B = "#67c9ba", C = "#fbef52",
+                 D = "#f2bfc9", E = "#cc504a", F = "#3f65c5"),
+      na.value = "white", name = "Filter",
+      guide = if (show_legends) "legend" else "none"
+    )
+  },
+  depth = function() {
+    scale_fill_manual(
+      values = c("30 m" = "#aeb7e0", "35 m" = "#333e80"),
+      na.value = "white", name = "Depth",
+      guide = if (show_legends) "legend" else "none"
+    )
+  },
+  bead_beat_time_min = function() {
+    scale_fill_stepsn(
+      colors = c("#d6d0d4", "#d4b6cb", "#cf99be", "#c75da7", "#c22593"),
+      na.value = "white", name = "Bead beat (min)", guide = guide_or_none()
+    )
+  },
+  lysis_incubation_time_min = function() {
+    scale_fill_stepsn(
+      colors = c("#d6d0d4", "#d4b6cb", "#cf99be", "#c75da7", "#c22593"),
+      na.value = "white", name = "Lysis incubation (min)", guide = guide_or_none()
+    )
+  },
+  lysis_temp_c = function() {
+    scale_fill_stepsn(
+      colors = c("#ebdd5e", "#d4c220", "#d4ad20", "#bd821c",
+                 "#bd671c", "#bd4a1c", "#bd241c"),
+      breaks = c(4, 20, 30, 40, 50, 65),
+      na.value = "white", name = "Lysis temp °C", guide = guide_or_none()
+    )
+  }
+)
+
+stopifnot(all(var_key$source[var_key$type == "own"] %in% names(own_scales)))
+```
+
+# Tile data
+
+Long format throughout. A level that is present becomes a row; anything absent simply has no row and stays white.
+
+```{r}
+#| label: tile-data
+
+presence_key <- var_key |> filter(type == "presence")
+
+presence_long <- metadata_recoded |>
+  select(sequence_id, all_of(unique(presence_key$source))) |>
+  pivot_longer(-sequence_id, names_to = "source", values_to = "level") |>
+  separate_longer_delim(level, delim = ",") |>
+  mutate(level = str_trim(level)) |>
+  filter(!is.na(level), level != "")
+
+# Anything in the data that the key does not describe would silently vanish.
+# Report it instead.
+unmatched <- presence_long |>
+  anti_join(presence_key, by = c("source", "level")) |>
+  distinct(source, level)
+if (nrow(unmatched) > 0) {
+  warning("Levels present in the data but missing from var_key:")
+  print(unmatched)
+} else {
+  cat("All observed levels are described in var_key.\n")
+}
+
+presence_tiles <- presence_long |>
+  inner_join(presence_key, by = c("source", "level")) |>
+  mutate(sequence_id = factor(sequence_id, levels = sample_levels))
+```
+
+# Plot helpers
+
+## Themes
+
+```{r}
+#| label: theme-helpers
+
+theme_panel_base <- function(y_labels = FALSE) {
+  theme_void() +
+    theme(
+      axis.text.y      = if (y_labels) {
+                           element_text(colour = "black", size = 6, hjust = 1)
+                         } else {
+                           element_blank()
+                         },
+      axis.title       = element_blank(),
+      legend.title     = element_blank(),
+      legend.position  = if (show_legends) "right" else "none",
+      panel.border     = element_rect(fill = NA, linewidth = 0.8, colour = "black"),
+      panel.background = element_rect(colour = NA, fill = "transparent"),
+      plot.background  = element_rect(colour = NA, fill = "transparent"),
+      plot.margin      = margin(0, 0, 0, 0, "cm"),
+      panel.spacing    = unit(0.06, "cm")
+    )
+}
+
+theme_heat <- function(y_labels = FALSE) {
+  theme_panel_base(y_labels = y_labels) +
+    theme(
+      axis.text.x      = element_text(size = 7, angle = 90, hjust = 0),
+      strip.background = element_blank(),
+      strip.text.x     = element_text(size = 7, face = "bold", margin = margin(b = 2))
+    )
+}
+
+theme_dots <- function(strip = TRUE, y_labels = FALSE) {
+  theme_panel_base(y_labels = y_labels) +
+    theme(
+      axis.text.x      = element_text(size = 5, angle = 45, hjust = 1, vjust = 1),
+      axis.ticks.x     = element_line(linewidth = 0.4, colour = "grey80"),
+      panel.grid.major = element_line(linetype = 3, linewidth = 0.4, colour = "grey80"),
+      panel.grid.minor = element_line(linetype = 3, linewidth = 0.4, colour = "grey80"),
+      strip.background = element_blank(),
+      strip.text.x     = if (strip) element_text(size = 7) else element_blank()
+    )
+}
+```
+
+## Square cells and group headers
+
+`ggh4x::force_panelsizes()` pins each panel to an exact size, so cells stay square no matter how patchwork allocates width. It is also what makes the grouped layout possible: `coord_fixed()` cannot be combined with `space = "free_x"`, so without ggh4x the heatmaps drop the group header strips and fall back to `coord_fixed()` -- square cells, no headers, original look.
+
+```{r}
+#| label: square-cells
+
+layout_heatmap <- function(n_cols_by_facet, cell = cell_mm) {
+  if (has_ggh4x) {
+    list(
+      facet_grid(
+        cols     = vars(block),
+        scales   = "free_x",
+        space    = "free_x",
+        labeller = labeller(block = block_labels)
+      ),
+      ggh4x::force_panelsizes(
+        rows = unit(length(sample_levels) * cell, "mm"),
+        cols = unit(n_cols_by_facet * cell, "mm")
+      )
+    )
+  } else {
+    coord_fixed(ratio = 1)
+  }
+}
+```
+
+## Heatmap builder
+
+Builds one heatmap panel. Layer order: an empty outlined grid (so every cell has a border, including white ones), then the block-coloured presence tiles, then one layer per self-scaled column.
+
+```{r}
+#| label: heatmap-builder
+
+build_heatmap <- function(panel_id, y_labels = FALSE) {
+  key <- var_key |> filter(panel == panel_id) |> droplevels()
+
+  grid_cells <- expand_grid(
+    sequence_id = factor(sample_levels, levels = sample_levels),
+    label       = key$label
+  ) |>
+    left_join(key |> select(label, block), by = "label")
+
+  tiles <- presence_tiles |>
+    filter(label %in% key$label) |>
+    mutate(
+      label = factor(as.character(label), levels = levels(key$label)),
+      block = factor(as.character(block), levels = levels(key$block))
+    )
+
+  p <- ggplot(mapping = aes(x = label, y = sequence_id)) +
+    geom_tile(data = grid_cells, fill = NA,
+              colour = "grey20", linewidth = 0.2, width = 0.95) +
+    geom_tile(data = tiles, aes(fill = fill_key),
+              colour = "grey20", linewidth = 0.2, width = 0.95) +
+    scale_fill_manual(values = block_pal, guide = "none")
+
+  own_rows <- which(key$type == "own")
+  for (i in own_rows) {
+    p <- p + new_scale_fill()
+    own_data <- tibble(
+      sequence_id = factor(metadata_recoded$sequence_id, levels = sample_levels),
+      label       = factor(as.character(key$label[i]), levels = levels(key$label)),
+      block       = factor(as.character(key$block[i]), levels = levels(key$block)),
+      value       = metadata_recoded[[key$source[i]]]
+    )
+    p <- p +
+      geom_tile(data = own_data, aes(fill = value),
+                colour = "grey20", linewidth = 0.2, width = 0.95) +
+      own_scales[[key$source[i]]]()
+  }
+
+  n_cols <- key |> count(block) |> pull(n)
+
+  p +
+    layout_heatmap(n_cols) +
+    scale_x_discrete(position = "top", expand = expansion(0, 0)) +
+    scale_y_discrete(expand = expansion(0, 0)) +
+    theme_heat(y_labels = y_labels)
+}
+```
+
+# Heatmap panels
+
+```{r}
+#| label: fig-heat-sample
+#| fig-width: 4
+#| fig-height: 7
+
+heat_sample <- build_heatmap("sample", y_labels = TRUE)
+heat_sample
+```
+
+```{r}
+#| label: fig-heat-chemistry
+#| fig-width: 9
+#| fig-height: 7
+
+heat_chemistry <- build_heatmap("chemistry")
+heat_chemistry
+```
+
+```{r}
+#| label: fig-heat-sequencing
+#| fig-width: 6
+#| fig-height: 7
+
+heat_sequencing <- build_heatmap("sequencing")
+heat_sequencing
+```
+
+# Bead size range
+
+```{r}
+#| label: fig-bead-size
+#| fig-width: 2
+#| fig-height: 7
+#| warning: false
+
+bead_size <- metadata_recoded |>
+  select(sequence_id, bead_size_raw, bead_size_min_mm, bead_size_max_mm) |>
+  separate_longer_delim(bead_size_raw, delim = ", ") |>
+  separate_longer_delim(bead_size_raw, delim = " and ") |>
+  mutate(
+    bead_size_raw = str_remove_all(bead_size_raw, "\\s*mm"),
+    bead_size_raw = na_if(str_trim(bead_size_raw), ""),
+    has_range     = str_detect(replace_na(bead_size_raw, ""), "-"),
+    bead_size_min_mm = if_else(has_range, as.numeric(bead_size_min_mm), NA_real_),
+    bead_size_max_mm = if_else(has_range, as.numeric(bead_size_max_mm), NA_real_)
+  ) |>
+  separate_longer_delim(bead_size_raw, delim = "-") |>
+  mutate(
+    bead_size_raw = as.numeric(bead_size_raw),
+    sequence_id   = factor(sequence_id, levels = sample_levels)
+  ) |>
+  ggplot(aes(x = bead_size_raw, y = sequence_id)) +
+  geom_linerange(aes(xmin = bead_size_min_mm, xmax = bead_size_max_mm),
+                 linewidth = 0.5, colour = "grey30") +
+  geom_point(shape = 21, size = 2.5, colour = "black", fill = "#3f4d4a") +
+  scale_x_continuous(expand = expansion(mult = c(0.1, 0.1))) +
+  scale_y_discrete(expand = expansion(0, 0)) +
+  theme_dots(strip = FALSE)
+
+bead_size
+```
+
+# RNA yield and quality
+
+```{r}
+#| label: fig-rna-qc
+#| fig-width: 4
+#| fig-height: 7
+#| warning: false
+
+rna_qc <- metadata_recoded |>
+  select(sequence_id, rin, rna_conc_ng_ul, total_rna_yield_ug) |>
+  pivot_longer(-sequence_id, names_to = "metric", values_to = "value_raw") |>
+  mutate(
+    value        = as.numeric(value_raw),
+    sequence_id  = factor(sequence_id, levels = sample_levels),
+    metric_label = factor(
+      metric,
+      levels = c("rin", "rna_conc_ng_ul", "total_rna_yield_ug"),
+      labels = c("RIN", "ng/µl", "Total µg")
+    )
+  ) |>
+  ggplot(aes(y = sequence_id)) +
+  geom_linerange(aes(xmin = 0, xmax = value), linewidth = 0.5, colour = "grey30") +
+  geom_point(aes(x = value, fill = metric_label),
+             shape = 21, size = 2.5, colour = "black") +
+  facet_grid(cols = vars(metric_label), scales = "free_x") +
+  scale_fill_manual(values = c("#d94b2b", "#d9712b", "#d9912b"), guide = "none") +
+  scale_x_continuous(expand = expansion(mult = c(0.02, 0.25))) +
+  scale_y_discrete(expand = expansion(0, 0)) +
+  theme_dots()
+
+rna_qc
+```
+
+# Assembly and transcript output
+
+```{r}
+#| label: fig-assembly-stats
+#| fig-width: 12
+#| fig-height: 7
+#| warning: false
+
+assembly_metrics <- c(
+  sequence_reads        = "Total reads",
+  busco_partial         = "BUSCO partial",
+  busco_complete        = "BUSCO complete",
+  transcripts           = "Total transcripts",
+  avg_transcript_length = "Mean transcript length (bp)",
+  n_genes_genemark      = "Number of genes (GeneMark-ST)",
+  longest_transcript    = "Longest transcript",
+  transcript_n50        = "N50",
+  transcripts_500bp     = "Transcripts > 500 bp",
+  transcripts_1000bp    = "Transcripts > 1000 bp",
+  total_assembly_length = "Total assembly length (bp)"
+)
+
+assembly_pal <- c("#9AC1DC", "#E1BD9E", "#D2BF8E", "#167CBA", "#B4C4D4",
+                  "#6F89A5", "#A9DEEC", "#88A10B", "#A4AE35", "#7B8B75", "#6EC076")
+
+assembly_stats <- metadata_recoded |>
+  select(sequence_id, all_of(names(assembly_metrics))) |>
+  pivot_longer(-sequence_id, names_to = "metric", values_to = "value_raw") |>
+  mutate(
+    value        = as.numeric(value_raw),
+    sequence_id  = factor(sequence_id, levels = sample_levels),
+    metric_label = factor(metric,
+                          levels = names(assembly_metrics),
+                          labels = str_wrap(unname(assembly_metrics), width = 14))
+  ) |>
+  ggplot(aes(y = sequence_id)) +
+  geom_linerange(aes(xmin = 0, xmax = value), linewidth = 0.5, colour = "grey30") +
+  geom_point(aes(x = value, fill = metric_label),
+             shape = 21, size = 2.5, colour = "black") +
+  facet_grid(cols = vars(metric_label), scales = "free_x") +
+  scale_fill_manual(values = assembly_pal, guide = "none") +
+  scale_x_continuous(expand = expansion(mult = c(0.02, 0.25))) +
+  scale_y_discrete(expand = expansion(0, 0)) +
+  theme_dots()
+
+assembly_stats
+```
+
+# Combine
+
+Panel widths are derived from the number of heatmap columns in each block, so they stay correct if `var_key` changes.
+
+```{r}
+#| label: fig-metadata-compilation
+#| fig-width: 22
+#| fig-height: 8
+#| warning: false
+
+heat_widths <- var_key |> count(panel) |> pull(n)   # sample, chemistry, sequencing
+
+metadata_figure <-
+  heat_sample +
+  bead_size +
+  heat_chemistry +
+  rna_qc +
+  heat_sequencing +
+  assembly_stats +
+  plot_layout(
+    nrow   = 1,
+    widths = c(heat_widths[1], 2.5, heat_widths[2], 9, heat_widths[3], 36),
+    guides = "collect"
+  )
+
+metadata_figure
+```
+
+```{r}
+#| label: save-figure
+#| eval: false
+
+# ggsave("heatmap-metadata_2026-09-01.svg", metadata_figure,
+#        width = 22, height = 8, device = "svg", limitsize = FALSE)
+```
+
+# Notes
+
+- Clustering of samples by processing method is in `cluster_samples_by_processing.qmd`.
+- To add a variable to the heatmap: add one row to `var_key`. If it needs a colour of its own, add an entry to `block_pal` (and `block_labels`); if it needs its own scale, add a function to `own_scales`.
+
+# Session information
+
+```{r}
+#| label: session-info
+
+sessionInfo()
+```
